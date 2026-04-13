@@ -1,4 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ── SUPABASE CONFIG ───────────────────────────────────
+const SUPABASE_URL = "https://ftgvvykcrswuivxulrad.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0Z3Z2eWtjcnN3dWl2eHVscmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTIzMTQsImV4cCI6MjA5MTY4ODMxNH0.chKBvxkpoAob7au8Dkzzi8OZOdc5fbOO3FF45nn0N7Q";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const B = {
   blue: "#2B8FD4",
@@ -13,7 +19,6 @@ const B = {
   textMuted: "#6B7F8E",
 };
 
-// Zip code to city mapping for Arlington TX area
 const ZIP_TO_CITY = {
   "76001": "Arlington, TX", "76002": "Arlington, TX", "76003": "Arlington, TX",
   "76004": "Arlington, TX", "76005": "Arlington, TX", "76006": "Arlington, TX",
@@ -25,13 +30,9 @@ const ZIP_TO_CITY = {
   "75050": "Grand Prairie, TX", "75051": "Grand Prairie, TX", "75052": "Grand Prairie, TX",
   "75053": "Grand Prairie, TX", "75054": "Grand Prairie, TX",
   "76021": "Bedford, TX", "76022": "Bedford, TX",
-  "76034": "Colleyville, TX",
-  "76039": "Euless, TX", "76040": "Euless, TX",
-  "76053": "Hurst, TX",
-  "76248": "Keller, TX",
-  "76051": "Grapevine, TX",
-  "75019": "Coppell, TX",
-  "76028": "Burleson, TX",
+  "76034": "Colleyville, TX", "76039": "Euless, TX", "76040": "Euless, TX",
+  "76053": "Hurst, TX", "76248": "Keller, TX", "76051": "Grapevine, TX",
+  "75019": "Coppell, TX", "76028": "Burleson, TX",
 };
 
 const getCityFromZip = (zip) => ZIP_TO_CITY[zip] || (zip.length === 5 ? `ZIP ${zip}` : "");
@@ -46,15 +47,8 @@ const LogoSmall = ({ size = 36 }) => (
 );
 
 const Avatar = ({ src, initials, size = 40, color = B.blue }) => (
-  <div style={{
-    width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-    background: src ? "transparent" : `linear-gradient(135deg, ${color}, ${B.blueMid})`,
-    display: "flex", alignItems: "center", justifyContent: "center",
-  }}>
-    {src
-      ? <img src={src} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      : <span style={{ color: "white", fontWeight: 800, fontSize: size * 0.33, fontFamily: "'Nunito', sans-serif" }}>{initials}</span>
-    }
+  <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: src ? "transparent" : `linear-gradient(135deg, ${color}, ${B.blueMid})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    {src ? <img src={src} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "white", fontWeight: 800, fontSize: size * 0.33, fontFamily: "'Nunito', sans-serif" }}>{initials}</span>}
   </div>
 );
 
@@ -63,7 +57,6 @@ const Btn = ({ children, onClick, disabled, variant = "primary", style: s = {} }
   const styles = {
     primary: { background: disabled ? B.warmGray : `linear-gradient(135deg, ${B.blue}, ${B.blueDark})`, color: disabled ? B.textMuted : "white", boxShadow: disabled ? "none" : `0 6px 20px ${B.blue}40` },
     ghost: { background: "transparent", color: B.textMuted, border: `2px solid ${B.warmGray}` },
-    green: { background: `linear-gradient(135deg, ${B.green}, #1F6B42)`, color: "white", boxShadow: "0 6px 20px rgba(46,139,92,0.35)" },
   };
   return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...styles[variant] }}>{children}</button>;
 };
@@ -80,7 +73,80 @@ const Check = ({ checked, onToggle, label, sublabel }) => (
   </div>
 );
 
-// SPLASH
+// ── AUTH SCREENS ──────────────────────────────────────
+const AuthScreen = ({ onAuth }) => {
+  const [mode, setMode] = useState("login"); // login | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleAuth = async () => {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setSuccess("Check your email to confirm your account! Then log in.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        onAuth();
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, ${B.blueLight} 0%, white 55%, ${B.offWhite} 100%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 28px" }}>
+      <Logo size={120} />
+      <div style={{ height: 24 }} />
+      <div style={{ width: "100%", maxWidth: 360 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 900, color: B.text, fontFamily: "'Nunito', sans-serif", textAlign: "center", marginBottom: 8 }}>
+          {mode === "login" ? "Welcome back 💙" : "Join your community 🌱"}
+        </h2>
+        <p style={{ fontSize: 14, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600, textAlign: "center", marginBottom: 28 }}>
+          {mode === "login" ? "Sign in to A Little Help?!" : "Create your free account"}
+        </p>
+
+        {error && <div style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#DC2626", fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>{error}</div>}
+        {success && <div style={{ background: B.greenLight, border: `1px solid ${B.green}40`, borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: B.green, fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>{success}</div>}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+          {[
+            { label: "Email", value: email, onChange: e => setEmail(e.target.value), type: "email", placeholder: "you@email.com" },
+            { label: "Password", value: password, onChange: e => setPassword(e.target.value), type: "password", placeholder: "••••••••" },
+          ].map(field => (
+            <div key={field.label}>
+              <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 6 }}>{field.label}</label>
+              <input {...field} style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 16, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", background: "white", boxSizing: "border-box", color: B.text }} />
+            </div>
+          ))}
+        </div>
+
+        <Btn onClick={handleAuth} disabled={loading || !email || !password}>
+          {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+        </Btn>
+
+        <div style={{ height: 14 }} />
+        <Btn onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setSuccess(""); }} variant="ghost">
+          {mode === "login" ? "New here? Create an account" : "Already have an account? Sign in"}
+        </Btn>
+
+        <p style={{ marginTop: 20, fontSize: 11, color: B.textMuted, fontFamily: "'Nunito', sans-serif", textAlign: "center", lineHeight: 1.6 }}>
+          A Little Help?! is a 501(c)(3) nonprofit<br />Free forever · No ads · No data selling
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ── SPLASH ────────────────────────────────────────────
 const SplashScreen = ({ onNext }) => {
   const [v, setV] = useState(false);
   useEffect(() => { setTimeout(() => setV(true), 100); }, []);
@@ -95,7 +161,6 @@ const SplashScreen = ({ onNext }) => {
   );
 };
 
-// AGE GATE
 const AgeGateScreen = ({ onConfirm, onDecline }) => {
   const [v, setV] = useState(false);
   useEffect(() => { setTimeout(() => setV(true), 100); }, []);
@@ -105,7 +170,7 @@ const AgeGateScreen = ({ onConfirm, onDecline }) => {
       <div style={{ height: 28 }} />
       <div style={{ fontSize: 52, marginBottom: 16 }}>🔞</div>
       <h2 style={{ fontSize: 24, fontWeight: 900, color: B.text, fontFamily: "'Nunito', sans-serif", marginBottom: 12 }}>You must be 18 or older</h2>
-      <p style={{ fontSize: 15, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600, lineHeight: 1.65, maxWidth: 300, marginBottom: 36 }}>A Little Help?! is designed for adults only. By continuing, you confirm that you are at least 18 years of age.</p>
+      <p style={{ fontSize: 15, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600, lineHeight: 1.65, maxWidth: 300, marginBottom: 36 }}>A Little Help?! is designed for adults only.</p>
       <div style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 12 }}>
         <Btn onClick={onConfirm}>✓ I am 18 or older</Btn>
         <Btn onClick={onDecline} variant="ghost">I am under 18</Btn>
@@ -122,10 +187,9 @@ const Under18Screen = () => (
   </div>
 );
 
-// ONBOARDING
 const slides = [
   { emoji: "🏘️", title: "Your neighborhood,\nyour community", body: "A Little Help?! is hyper-local. Everything stays within your city — your neighbors, your block, your people.", cta: "That sounds great →" },
-  { emoji: "🔒", title: "Privacy first,\nalways", body: "Your contact info is never shared until YOU choose to connect with someone. Browse freely, engage safely.", cta: "Good to know →" },
+  { emoji: "🔒", title: "Privacy first,\nalways", body: "Your contact info is never shared until YOU choose to connect with someone.", cta: "Good to know →" },
   { emoji: "💙", title: "No ratings.\nNo transactions.\nNo ads.", body: "This is a 501(c)(3) nonprofit. No reviews, no payments, no pressure — just genuine people doing kind things.", cta: "I love this →" },
 ];
 
@@ -148,7 +212,6 @@ const OnboardingScreen = ({ step, onNext, onBack }) => {
   );
 };
 
-// DISCLAIMERS
 const DisclaimerScreen = ({ onNext }) => {
   const [checks, setChecks] = useState({ c1: false, c2: false, c3: false, c4: false });
   const allChecked = Object.values(checks).every(Boolean);
@@ -158,22 +221,19 @@ const DisclaimerScreen = ({ onNext }) => {
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: B.blue, fontFamily: "'Nunito', sans-serif", marginBottom: 6 }}>BEFORE YOU JOIN</div>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: B.text, fontFamily: "'Nunito', sans-serif", marginBottom: 8 }}>A few important things 🛡️</h2>
-        <p style={{ fontSize: 14, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600, lineHeight: 1.5 }}>Please read and confirm each one.</p>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ background: "white", borderRadius: 18, padding: 20, border: `1px solid ${B.warmGray}`, display: "flex", flexDirection: "column", gap: 16 }}>
           <Check checked={checks.c1} onToggle={() => toggle("c1")} label="I will meet helpers in public places" sublabel="A Little Help?! encourages all in-person meetings to happen in visible, public locations." />
           <div style={{ height: 1, background: B.warmGray }} />
-          <Check checked={checks.c2} onToggle={() => toggle("c2")} label="I understand users are not verified" sublabel="A Little Help?! does not conduct background checks or verify identities. Use your own judgment." />
+          <Check checked={checks.c2} onToggle={() => toggle("c2")} label="I understand users are not verified" sublabel="A Little Help?! does not conduct background checks. Use your own judgment." />
           <div style={{ height: 1, background: B.warmGray }} />
-          <Check checked={checks.c3} onToggle={() => toggle("c3")} label="This is not an emergency service" sublabel="If you are in danger, call 911. A Little Help?! cannot be used for emergencies." />
+          <Check checked={checks.c3} onToggle={() => toggle("c3")} label="This is not an emergency service" sublabel="If you are in danger, call 911." />
           <div style={{ height: 1, background: B.warmGray }} />
-          <Check checked={checks.c4} onToggle={() => toggle("c4")} label="Users are not licensed professionals" sublabel="Nothing on this platform constitutes medical, legal, or professional advice." />
+          <Check checked={checks.c4} onToggle={() => toggle("c4")} label="Users are not licensed professionals" sublabel="Nothing here constitutes medical, legal, or professional advice." />
         </div>
-        <div style={{ background: B.blueLight, borderRadius: 14, padding: "14px 16px", border: `1px solid ${B.blue}20` }}>
-          <p style={{ fontSize: 13, color: B.blue, fontFamily: "'Nunito', sans-serif", fontWeight: 700, margin: 0, lineHeight: 1.6 }}>
-            By joining you agree to our <span style={{ textDecoration: "underline", cursor: "pointer" }}>Terms of Service</span> and <span style={{ textDecoration: "underline", cursor: "pointer" }}>Privacy Policy</span> — governed by the laws of the State of Texas.
-          </p>
+        <div style={{ background: B.blueLight, borderRadius: 14, padding: "14px 16px" }}>
+          <p style={{ fontSize: 13, color: B.blue, fontFamily: "'Nunito', sans-serif", fontWeight: 700, margin: 0 }}>By joining you agree to our Terms of Service and Privacy Policy — governed by Texas law.</p>
         </div>
       </div>
       <div style={{ height: 20 }} />
@@ -183,12 +243,10 @@ const DisclaimerScreen = ({ onNext }) => {
 };
 
 
-// PROFILE SETUP
 const ProfileScreen = ({ onNext, setUserProfile }) => {
   const [role, setRole] = useState(null);
   const [name, setName] = useState("");
   const [zip, setZip] = useState("");
-  const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const fileRef = useRef(null);
   const city = getCityFromZip(zip);
@@ -197,16 +255,10 @@ const ProfileScreen = ({ onNext, setUserProfile }) => {
   const handlePhoto = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setPhoto(file);
       const reader = new FileReader();
       reader.onload = (ev) => setPhotoPreview(ev.target.result);
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleJoin = () => {
-    setUserProfile({ name, zip, city, role, photoPreview });
-    onNext();
   };
 
   return (
@@ -214,21 +266,16 @@ const ProfileScreen = ({ onNext, setUserProfile }) => {
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: B.blue, fontFamily: "'Nunito', sans-serif", marginBottom: 6 }}>ALMOST THERE</div>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: B.text, fontFamily: "'Nunito', sans-serif", marginBottom: 6 }}>Set up your profile</h2>
-        <p style={{ fontSize: 14, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>Only your first name and neighborhood are ever shown publicly.</p>
+        <p style={{ fontSize: 14, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>Only your first name and city are ever shown publicly.</p>
       </div>
-
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Photo upload */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <div onClick={() => fileRef.current.click()} style={{ width: 90, height: 90, borderRadius: "50%", background: photoPreview ? "transparent" : B.blueLight, border: `2px dashed ${B.blue}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0 }}>
-            {photoPreview
-              ? <img src={photoPreview} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <span style={{ fontSize: 32 }}>📷</span>}
+          <div onClick={() => fileRef.current.click()} style={{ width: 90, height: 90, borderRadius: "50%", background: photoPreview ? "transparent" : B.blueLight, border: `2px dashed ${B.blue}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}>
+            {photoPreview ? <img src={photoPreview} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 32 }}>📷</span>}
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: "none" }} />
-          <p style={{ fontSize: 13, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>{photoPreview ? "Tap to change photo" : "Add a profile photo (optional)"}</p>
+          <p style={{ fontSize: 13, color: B.textMuted, fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>{photoPreview ? "Tap to change" : "Add a profile photo (optional)"}</p>
         </div>
-
         {[
           { label: "First name only", value: name, onChange: e => setName(e.target.value), placeholder: "e.g. Maria", maxLength: 30 },
           { label: "Zip code", value: zip, onChange: e => setZip(e.target.value.replace(/\D/g, "")), placeholder: "e.g. 76010", maxLength: 5 },
@@ -239,32 +286,24 @@ const ProfileScreen = ({ onNext, setUserProfile }) => {
             {field.label === "Zip code" && city && <p style={{ fontSize: 12, color: B.blue, fontFamily: "'Nunito', sans-serif", fontWeight: 700, marginTop: 6 }}>📍 {city}</p>}
           </div>
         ))}
-
         <div>
           <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 10 }}>I'm here to…</label>
           <div style={{ display: "flex", gap: 10 }}>
             {[{ id: "both", label: "Both! 🤝", desc: "Help & receive" }, { id: "help", label: "Give help 💙", desc: "Offer my time" }, { id: "receive", label: "Get help 🙏", desc: "Ask for support" }].map(r => (
-              <button key={r.id} onClick={() => setRole(r.id)} style={{ flex: 1, padding: "12px 6px", borderRadius: 14, border: `2px solid ${role === r.id ? B.blue : B.warmGray}`, background: role === r.id ? B.blueLight : "white", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+              <button key={r.id} onClick={() => setRole(r.id)} style={{ flex: 1, padding: "12px 6px", borderRadius: 14, border: `2px solid ${role === r.id ? B.blue : B.warmGray}`, background: role === r.id ? B.blueLight : "white", cursor: "pointer", textAlign: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: role === r.id ? B.blue : B.text, fontFamily: "'Nunito', sans-serif" }}>{r.label}</div>
                 <div style={{ fontSize: 11, color: B.textMuted, fontFamily: "'Nunito', sans-serif", marginTop: 2 }}>{r.desc}</div>
               </button>
             ))}
           </div>
         </div>
-
-        <div style={{ background: B.blueLight, borderRadius: 14, padding: "12px 16px", border: `1px solid ${B.blue}20` }}>
-          <p style={{ fontSize: 13, color: B.blue, fontFamily: "'Nunito', sans-serif", fontWeight: 700, margin: 0 }}>🔒 We never sell your data or share your contact info without your explicit consent.</p>
-        </div>
       </div>
-
       <div style={{ height: 24 }} />
-      <Btn onClick={handleJoin} disabled={!ready}>Join my community 🌱</Btn>
+      <Btn onClick={() => { setUserProfile({ name, zip, city, role, photoPreview }); onNext(); }} disabled={!ready}>Join my community 🌱</Btn>
     </div>
   );
 };
 
-
-// CATEGORIES & POSTS
 const CATEGORIES = [
   { id: "errands", emoji: "🛒", label: "Errands" },
   { id: "petcare", emoji: "🐾", label: "Pet Care" },
@@ -286,13 +325,11 @@ const SAMPLE_POSTS = [
   { id: 4, type: "offer", category: "yard", emoji: "🌱", name: "Carlos M.", initials: "CM", time: "Yesterday", title: "Free yard help on Saturdays", description: "I have a truck and tools — happy to help neighbors with yard work on Saturday mornings.", city: "Arlington, TX", responded: false, photoPreview: null },
 ];
 
-// MESSAGE THREAD MOCK DATA
 const SAMPLE_THREADS = [
   { id: 1, name: "Margaret T.", initials: "MT", lastMessage: "That would be so helpful, thank you!", time: "2h ago", unread: true, photoPreview: null },
   { id: 2, name: "Carlos M.", initials: "CM", lastMessage: "I can come by Saturday morning!", time: "Yesterday", unread: false, photoPreview: null },
 ];
 
-// CREATE POST MODAL
 const CreatePostModal = ({ onClose, onPost, userProfile }) => {
   const [type, setType] = useState("request");
   const [category, setCategory] = useState(null);
@@ -301,30 +338,10 @@ const CreatePostModal = ({ onClose, onPost, userProfile }) => {
   const [customCategory, setCustomCategory] = useState("");
   const ready = type && category && title.trim() && description.trim() && (category !== "other" || customCategory.trim());
 
-  const handlePost = () => {
-    const cat = CATEGORIES.find(c => c.id === category);
-    onPost({
-      id: Date.now(),
-      type,
-      category,
-      emoji: cat?.emoji || "✨",
-      name: userProfile?.name || "You",
-      initials: (userProfile?.name || "Y").charAt(0).toUpperCase(),
-      photoPreview: userProfile?.photoPreview || null,
-      time: "Just now",
-      title: category === "other" ? customCategory : title,
-      description,
-      city: userProfile?.city || "Arlington, TX",
-      responded: false,
-    });
-    onClose();
-  };
-
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "flex-end" }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: "white", borderRadius: "24px 24px 0 0", padding: "28px 24px 48px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
         <h3 style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, fontSize: 20, color: B.text, marginBottom: 20 }}>Create a post</h3>
-
         <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
           {[{ id: "request", emoji: "🙏", label: "I need help" }, { id: "offer", emoji: "💙", label: "I can help" }].map(t => (
             <button key={t.id} onClick={() => setType(t.id)} style={{ flex: 1, padding: "14px 8px", borderRadius: 16, border: `2px solid ${type === t.id ? B.blue : B.warmGray}`, background: type === t.id ? B.blueLight : "white", cursor: "pointer" }}>
@@ -333,7 +350,6 @@ const CreatePostModal = ({ onClose, onPost, userProfile }) => {
             </button>
           ))}
         </div>
-
         <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 8 }}>Category</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {CATEGORIES.map(c => (
@@ -342,45 +358,34 @@ const CreatePostModal = ({ onClose, onPost, userProfile }) => {
             </button>
           ))}
         </div>
-
         {category === "other" && (
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 8 }}>What kind of help?</label>
             <input value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="e.g. Moving help, Photography..." style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box", color: B.text }} />
           </div>
         )}
-
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 8 }}>Title</label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief title for your post..." style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box", color: B.text }} />
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief title..." style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box", color: B.text }} />
         </div>
-
         <div style={{ marginBottom: 24 }}>
           <label style={{ fontSize: 13, fontWeight: 800, color: B.text, fontFamily: "'Nunito', sans-serif", display: "block", marginBottom: 8 }}>Details</label>
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Tell neighbors a little more..." rows={3} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box", color: B.text, resize: "none" }} />
         </div>
-
-        <Btn onClick={handlePost} disabled={!ready}>Post to my community 🌱</Btn>
+        <Btn onClick={() => { const cat = CATEGORIES.find(c => c.id === category); onPost({ id: Date.now(), type, category, emoji: cat?.emoji || "✨", name: userProfile?.name || "You", initials: (userProfile?.name || "Y").charAt(0).toUpperCase(), photoPreview: userProfile?.photoPreview || null, time: "Just now", title: category === "other" ? customCategory : title, description, city: userProfile?.city || "Arlington, TX", responded: false }); onClose(); }} disabled={!ready}>Post to my community 🌱</Btn>
       </div>
     </div>
   );
 };
 
-// MESSAGE THREAD VIEW
-const MessageThreadScreen = ({ thread, onBack, userProfile }) => {
+const MessageThreadScreen = ({ thread, onBack }) => {
   const [messages, setMessages] = useState([
     { id: 1, from: "them", text: "Hi! I saw your post and I'd love to help!", time: "2h ago" },
     { id: 2, from: "me", text: "Oh that's so wonderful, thank you so much!", time: "2h ago" },
     { id: 3, from: "them", text: thread.lastMessage, time: thread.time },
   ]);
   const [newMsg, setNewMsg] = useState("");
-
-  const send = () => {
-    if (!newMsg.trim()) return;
-    setMessages(prev => [...prev, { id: Date.now(), from: "me", text: newMsg, time: "Just now" }]);
-    setNewMsg("");
-  };
-
+  const send = () => { if (!newMsg.trim()) return; setMessages(prev => [...prev, { id: Date.now(), from: "me", text: newMsg, time: "Just now" }]); setNewMsg(""); };
   return (
     <div style={{ minHeight: "100vh", background: B.offWhite, display: "flex", flexDirection: "column" }}>
       <div style={{ background: "white", padding: "52px 20px 14px", borderBottom: `1px solid ${B.warmGray}`, display: "flex", alignItems: "center", gap: 12 }}>
@@ -391,8 +396,7 @@ const MessageThreadScreen = ({ thread, onBack, userProfile }) => {
           <div style={{ fontSize: 11, color: B.green, fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>● Active</div>
         </div>
       </div>
-
-      <div style={{ flex: 1, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", paddingBottom: 100 }}>
+      <div style={{ flex: 1, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 100 }}>
         {messages.map(msg => (
           <div key={msg.id} style={{ display: "flex", justifyContent: msg.from === "me" ? "flex-end" : "flex-start" }}>
             <div style={{ maxWidth: "75%", background: msg.from === "me" ? B.blue : "white", color: msg.from === "me" ? "white" : B.text, borderRadius: msg.from === "me" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: "10px 14px", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
@@ -402,7 +406,6 @@ const MessageThreadScreen = ({ thread, onBack, userProfile }) => {
           </div>
         ))}
       </div>
-
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "white", borderTop: `1px solid ${B.warmGray}`, padding: "12px 16px 32px", display: "flex", gap: 10, alignItems: "center" }}>
         <input value={newMsg} onChange={e => setNewMsg(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Send a message..." style={{ flex: 1, padding: "12px 16px", borderRadius: 24, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", color: B.text }} />
         <button onClick={send} style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${B.blue}, ${B.blueDark})`, border: "none", color: "white", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
@@ -411,7 +414,6 @@ const MessageThreadScreen = ({ thread, onBack, userProfile }) => {
   );
 };
 
-// MESSAGES LIST
 const MessagesScreen = ({ threads, onOpenThread }) => (
   <div style={{ minHeight: "100vh", background: B.offWhite, paddingBottom: 100 }}>
     <div style={{ background: "white", padding: "52px 20px 16px", borderBottom: `1px solid ${B.warmGray}` }}>
@@ -428,7 +430,7 @@ const MessagesScreen = ({ threads, onOpenThread }) => (
         <div key={thread.id} onClick={() => onOpenThread(thread)} style={{ background: "white", borderRadius: 16, padding: "14px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", cursor: "pointer" }}>
           <Avatar src={thread.photoPreview} initials={thread.initials} size={46} />
           <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div style={{ fontWeight: 800, fontSize: 15, color: B.text, fontFamily: "'Nunito', sans-serif" }}>{thread.name}</div>
               <div style={{ fontSize: 11, color: B.textMuted, fontFamily: "'Nunito', sans-serif" }}>{thread.time}</div>
             </div>
@@ -441,9 +443,7 @@ const MessagesScreen = ({ threads, onOpenThread }) => (
   </div>
 );
 
-
-// FEED SCREEN
-const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
+const FeedScreen = ({ userProfile, activeTab, setActiveTab, onSignOut }) => {
   const [posts, setPosts] = useState(SAMPLE_POSTS);
   const [activeCategory, setActiveCategory] = useState(null);
   const [impact, setImpact] = useState(1247);
@@ -452,34 +452,10 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
   const [threads, setThreads] = useState(SAMPLE_THREADS);
   const [activeThread, setActiveThread] = useState(null);
   const [newMsg, setNewMsg] = useState("");
-
   const filtered = activeCategory ? posts.filter(p => p.category === activeCategory) : posts;
   const city = userProfile?.city || "Arlington, TX";
 
-  const handleRespond = (post) => setShowMessageComposer(post);
-
-  const sendFirstMessage = () => {
-    if (!newMsg.trim() || !showMessageComposer) return;
-    const newThread = {
-      id: Date.now(),
-      name: showMessageComposer.name,
-      initials: showMessageComposer.initials,
-      photoPreview: showMessageComposer.photoPreview,
-      lastMessage: newMsg,
-      time: "Just now",
-      unread: false,
-    };
-    setThreads(prev => [newThread, ...prev]);
-    setPosts(prev => prev.map(p => p.id === showMessageComposer.id ? { ...p, responded: true } : p));
-    setImpact(c => c + 1);
-    setShowMessageComposer(null);
-    setNewMsg("");
-    setActiveTab("messages");
-  };
-
-  if (activeThread) {
-    return <MessageThreadScreen thread={activeThread} onBack={() => setActiveThread(null)} userProfile={userProfile} />;
-  }
+  if (activeThread) return <MessageThreadScreen thread={activeThread} onBack={() => setActiveThread(null)} />;
 
   return (
     <div style={{ minHeight: "100vh", background: B.offWhite, paddingBottom: 100 }}>
@@ -501,6 +477,9 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
                 {userProfile?.role === "help" ? "💙 Here to give help" : userProfile?.role === "receive" ? "🙏 Here to receive help" : "🤝 Here to give & receive help"}
               </div>
             </div>
+            <div style={{ width: "100%", marginTop: 8 }}>
+              <Btn onClick={onSignOut} variant="ghost">Sign Out</Btn>
+            </div>
           </div>
         </div>
       ) : (
@@ -518,13 +497,12 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
             </div>
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
               {[{ id: null, emoji: "✨", label: "All" }, ...CATEGORIES].map(c => (
-                <button key={c.id} onClick={() => setActiveCategory(c.id)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 13px", borderRadius: 99, border: `2px solid ${activeCategory === c.id ? B.blue : B.warmGray}`, background: activeCategory === c.id ? B.blueLight : "white", color: activeCategory === c.id ? B.blue : B.textMuted, fontWeight: 700, fontSize: 13, fontFamily: "'Nunito', sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s" }}>
+                <button key={c.id} onClick={() => setActiveCategory(c.id)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 13px", borderRadius: 99, border: `2px solid ${activeCategory === c.id ? B.blue : B.warmGray}`, background: activeCategory === c.id ? B.blueLight : "white", color: activeCategory === c.id ? B.blue : B.textMuted, fontWeight: 700, fontSize: 13, fontFamily: "'Nunito', sans-serif", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   <span>{c.emoji}</span><span>{c.label}</span>
                 </button>
               ))}
             </div>
           </div>
-
           <div style={{ padding: "20px 20px 0" }}>
             <div style={{ background: `linear-gradient(135deg, ${B.blue}, ${B.blueDark})`, borderRadius: 18, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, color: "white", boxShadow: `0 4px 20px ${B.blue}40`, marginBottom: 20 }}>
               <div style={{ fontSize: 30 }}>🌱</div>
@@ -534,7 +512,6 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
               </div>
               <div style={{ marginLeft: "auto", fontSize: 11, opacity: 0.75, textAlign: "right", fontFamily: "'Nunito', sans-serif" }}>Growing<br />every day ✨</div>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {filtered.map(post => (
                 <div key={post.id} style={{ background: "white", borderRadius: 20, padding: 20, boxShadow: "0 2px 16px rgba(0,0,0,0.07)", border: `1px solid ${B.warmGray}`, position: "relative", overflow: "hidden" }}>
@@ -553,7 +530,7 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
                   </div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: B.text, marginBottom: 6, fontFamily: "'Nunito', sans-serif" }}>{post.emoji} {post.title}</div>
                   <div style={{ fontSize: 13, color: B.textMuted, lineHeight: 1.5, marginBottom: 14, fontFamily: "'Nunito', sans-serif" }}>{post.description}</div>
-                  <button onClick={() => !post.responded && handleRespond(post)} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `2px solid ${post.responded ? B.warmGray : B.blue}`, background: post.responded ? B.warmGray : B.blue, color: post.responded ? B.textMuted : "white", fontWeight: 800, fontSize: 13, cursor: post.responded ? "default" : "pointer", fontFamily: "'Nunito', sans-serif", transition: "all 0.2s" }}>
+                  <button onClick={() => !post.responded && setShowMessageComposer(post)} style={{ width: "100%", padding: "10px", borderRadius: 12, border: `2px solid ${post.responded ? B.warmGray : B.blue}`, background: post.responded ? B.warmGray : B.blue, color: post.responded ? B.textMuted : "white", fontWeight: 800, fontSize: 13, cursor: post.responded ? "default" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
                     {post.responded ? "✓ Message sent" : post.type === "request" ? "💙 I can help!" : "🙌 I'd love that!"}
                   </button>
                 </div>
@@ -563,7 +540,6 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
         </>
       )}
 
-      {/* Message composer modal */}
       {showMessageComposer && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "flex-end" }} onClick={() => setShowMessageComposer(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: "white", borderRadius: "24px 24px 0 0", padding: "28px 24px 48px", width: "100%" }}>
@@ -575,21 +551,23 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
               </div>
             </div>
             <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder={`Say hi to ${showMessageComposer.name}...`} rows={3} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: `2px solid ${B.warmGray}`, fontSize: 15, fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box", color: B.text, resize: "none", marginBottom: 16 }} />
-            <Btn onClick={sendFirstMessage} disabled={!newMsg.trim()}>Send message 💙</Btn>
+            <Btn onClick={() => {
+              const newThread = { id: Date.now(), name: showMessageComposer.name, initials: showMessageComposer.initials, photoPreview: showMessageComposer.photoPreview, lastMessage: newMsg, time: "Just now", unread: false };
+              setThreads(prev => [newThread, ...prev]);
+              setPosts(prev => prev.map(p => p.id === showMessageComposer.id ? { ...p, responded: true } : p));
+              setImpact(c => c + 1);
+              setShowMessageComposer(null);
+              setNewMsg("");
+              setActiveTab("messages");
+            }} disabled={!newMsg.trim()}>Send message 💙</Btn>
           </div>
         </div>
       )}
 
-      {/* Create post modal */}
       {showPost && <CreatePostModal onClose={() => setShowPost(false)} onPost={(p) => { setPosts(prev => [p, ...prev]); setImpact(c => c + 1); }} userProfile={userProfile} />}
 
-      {/* Bottom nav */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "white", borderTop: `1px solid ${B.warmGray}`, padding: "10px 0 24px", display: "flex", justifyContent: "space-around", zIndex: 20 }}>
-        {[
-          { id: "feed", emoji: "🏠", label: "Feed" },
-          { id: "messages", emoji: "💬", label: "Messages", badge: threads.filter(t => t.unread).length },
-          { id: "profile", emoji: "👤", label: "Profile" },
-        ].map(item => (
+        {[{ id: "feed", emoji: "🏠", label: "Feed" }, { id: "messages", emoji: "💬", label: "Messages", badge: threads.filter(t => t.unread).length }, { id: "profile", emoji: "👤", label: "Profile" }].map(item => (
           <div key={item.id} onClick={() => setActiveTab(item.id)} style={{ textAlign: "center", cursor: "pointer", position: "relative" }}>
             <div style={{ fontSize: 22 }}>{item.emoji}</div>
             {item.badge > 0 && <div style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: B.blue, color: "white", fontSize: 10, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Nunito', sans-serif" }}>{item.badge}</div>}
@@ -597,19 +575,47 @@ const FeedScreen = ({ userProfile, onNavigate, activeTab, setActiveTab }) => {
           </div>
         ))}
       </div>
-
-      {/* FAB */}
       {activeTab === "feed" && <button onClick={() => setShowPost(true)} style={{ position: "fixed", bottom: 86, right: 20, width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${B.blue}, ${B.blueDark})`, border: "none", color: "white", fontSize: 28, cursor: "pointer", boxShadow: `0 6px 20px ${B.blue}60`, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>+</button>}
     </div>
   );
 };
 
-// MAIN APP
+// ── MAIN APP ──────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState("splash");
   const [onboardStep, setOnboardStep] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [activeTab, setActiveTab] = useState("feed");
+  const [session, setSession] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setCheckingAuth(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUserProfile(null);
+    setScreen("splash");
+  };
+
+  if (checkingAuth) return (
+    <div style={{ minHeight: "100vh", background: B.offWhite, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ fontSize: 48 }}>🌱</div>
+    </div>
+  );
+
+  if (!session && screen !== "splash" && screen !== "agegate" && screen !== "under18" && screen !== "onboard" && screen !== "disclaimers") {
+    return <AuthScreen onAuth={() => setScreen("profile")} />;
+  }
 
   if (screen === "splash") return <SplashScreen onNext={() => setScreen("agegate")} />;
   if (screen === "agegate") return <AgeGateScreen onConfirm={() => setScreen("onboard")} onDecline={() => setScreen("under18")} />;
@@ -621,8 +627,10 @@ export default function App() {
       onBack={() => onboardStep === 0 ? setScreen("agegate") : setOnboardStep(s => s - 1)}
     />
   );
-  if (screen === "disclaimers") return <DisclaimerScreen onNext={() => setScreen("profile")} />;
+  if (screen === "disclaimers") return <DisclaimerScreen onNext={() => setScreen(session ? "feed" : "auth")} />;
+  if (screen === "auth") return <AuthScreen onAuth={() => setScreen("profile")} />;
   if (screen === "profile") return <ProfileScreen onNext={() => setScreen("feed")} setUserProfile={setUserProfile} />;
-  if (screen === "feed") return <FeedScreen userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />;
+  if (screen === "feed") return <FeedScreen userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} onSignOut={handleSignOut} />;
   return null;
 }
+  
