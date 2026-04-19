@@ -796,15 +796,15 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
               </button>
-              <Logo size={80}/>
+              <Logo size={160}/>
               <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={36}/>
             </div>
 
-            {/* Kindness counter — centered */}
+            {/* Kindness counter — centered, pink */}
             <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
-              <div style={{border:`1.5px solid ${B.blue}`,borderRadius:10,padding:"4px 10px",background:"white",display:"inline-flex",alignItems:"center",gap:5}}>
-                <span style={{fontSize:11}}>💙</span>
-                <span style={{fontSize:11,fontWeight:800,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()} acts of kindness & counting</span>
+              <div style={{border:`2px solid #e91e8c`,borderRadius:12,padding:"6px 14px",background:"white",display:"inline-flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:14}}>🩷</span>
+                <span style={{fontSize:13,fontWeight:800,color:"#e91e8c",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()} acts of kindness & counting</span>
               </div>
             </div>
 
