@@ -796,7 +796,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
               </button>
-              <Logo size={52}/>
+              <Logo size={80}/>
               <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={36}/>
             </div>
 
