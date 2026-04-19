@@ -656,7 +656,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                         {post.type==="request"?"💙 I can help!":"🙌 I'd love that!"}
                       </button>
                     ):(
-                      <div style={{display:"flex",gap:8"}}>
+                      <div style={{display:"flex",gap:8}}>
                         <div style={{flex:1,padding:"8px 12px",borderRadius:12,background:B.warmGray,fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",fontWeight:600,textAlign:"center"}}>Your post</div>
                         <button onClick={()=>setConfirmDelete(post.id)} style={{padding:"8px 14px",borderRadius:12,background:B.redLight,border:"none",color:B.red,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🗑️ Delete</button>
                       </div>
