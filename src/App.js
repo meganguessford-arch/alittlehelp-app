@@ -5,6 +5,7 @@ const SUPABASE_URL = "https://ftgvvykcrswuivxulrad.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0Z3Z2eWtjcnN3dWl2eHVscmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTIzMTQsImV4cCI6MjA5MTY4ODMxNH0.chKBvxkpoAob7au8Dkzzi8OZOdc5fbOO3FF45nn0N7Q";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DONORBOX_URL = "https://donorbox.org/launch-fund-for-a-little-help";
+const FORMSPREE_URL = "https://formspree.io/f/mwvaqlvk";
 
 const B = {
   blue: "#2B8FD4", blueDark: "#1A6FAD", blueLight: "#E8F4FD", blueMid: "#5AAEE0",
@@ -84,36 +85,97 @@ const Check=({checked,onToggle,label,sublabel})=>(
   </div>
 );
 
+// SUPPORT FORM
+const SupportForm=({onBack})=>{
+  const[name,setName]=useState("");
+  const[email,setEmail]=useState("");
+  const[message,setMessage]=useState("");
+  const[submitted,setSubmitted]=useState(false);
+  const[loading,setLoading]=useState(false);
+
+  const handleSubmit=async()=>{
+    setLoading(true);
+    try{
+      await fetch(FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,message})});
+      setSubmitted(true);
+    }catch(e){}
+    setLoading(false);
+  };
+
+  if(submitted)return(
+    <div style={{textAlign:"center",padding:"40px 20px"}}>
+      <div style={{fontSize:48,marginBottom:16}}>💙</div>
+      <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Message sent!</h3>
+      <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:24}}>We typically respond within 48 hours. Thank you for helping us improve! 🌱</p>
+      <Btn onClick={onBack} variant="ghost">← Back</Btn>
+    </div>
+  );
+
+  return(
+    <div>
+      <button onClick={onBack} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
+      <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Tech Support 🐛</h3>
+      <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:20}}>Having trouble? Tell us what happened and we'll get back to you!</p>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {[{label:"Your name",value:name,onChange:e=>setName(e.target.value),placeholder:"First name"},{label:"Your email",value:email,onChange:e=>setEmail(e.target.value),placeholder:"you@email.com",type:"email"}].map(field=>(
+          <div key={field.label}>
+            <label style={{fontSize:13,fontWeight:800,color:B.text,fontFamily:"'Nunito', sans-serif",display:"block",marginBottom:6}}>{field.label}</label>
+            <input {...field} style={{width:"100%",padding:"12px 16px",borderRadius:12,border:`2px solid ${B.warmGray}`,fontSize:15,fontFamily:"'Nunito', sans-serif",fontWeight:600,outline:"none",background:"white",boxSizing:"border-box",color:B.text}}/>
+          </div>
+        ))}
+        <div>
+          <label style={{fontSize:13,fontWeight:800,color:B.text,fontFamily:"'Nunito', sans-serif",display:"block",marginBottom:6}}>What happened?</label>
+          <textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Describe the issue..." rows={4} style={{width:"100%",padding:"12px 16px",borderRadius:12,border:`2px solid ${B.warmGray}`,fontSize:15,fontFamily:"'Nunito', sans-serif",fontWeight:600,outline:"none",boxSizing:"border-box",color:B.text,resize:"none"}}/>
+        </div>
+        <Btn onClick={handleSubmit} disabled={!name||!email||!message||loading}>{loading?"Sending...":"Send message 💙"}</Btn>
+      </div>
+    </div>
+  );
+};
+
 // HAMBURGER MENU
 const HamburgerMenu=({onClose,onSignOut})=>{
+  const[page,setPage]=useState(null);
   const items=[
     {emoji:"💙",label:"About A Little Help?!",content:"about"},
     {emoji:"❓",label:"How It Works",content:"how"},
     {emoji:"🛡️",label:"Safety Tips",content:"safety"},
     {emoji:"🐛",label:"Tech Support / Report a Bug",content:"support"},
     {emoji:"📋",label:"Legal Notices",content:"legal"},
-    {emoji:"💰",label:"Support Us",content:"donate"},
+    {emoji:"💰",label:"Support Us — Keep the App Free",content:"donate"},
   ];
-  const[page,setPage]=useState(null);
 
   const pages={
     about:(
       <div>
-        <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:12}}>About A Little Help?! 🌱</h3>
-        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:12}}>A Little Help?! is a 501(c)(3) nonprofit based in Arlington, TX. Our mission is to restore faith in humanity — one small act of kindness at a time.</p>
-        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:12}}>We believe neighbors helping neighbors is the most powerful force for community. Our app is free, private, and built on trust.</p>
-        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>EIN: 35-2983400 · Arlington, TX · <a href="https://alittlehelpapp.org" target="_blank" rel="noreferrer" style={{color:B.blue}}>alittlehelpapp.org</a></p>
+        <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
+        <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>About A Little Help?! 🌱</h3>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>
+          "We believe that giving and receiving are both sacred — and that there is enough for everyone.
+        </p>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>
+          A Little Help?! exists because we know the world gets better when vulnerability meets compassion, when we show up for each other. Not governments. Not corporations. People.
+        </p>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:20,fontStyle:"italic"}}>
+          Sometimes all it takes to heal is a little help." 🌱
+        </p>
+        <div style={{background:B.blueLight,borderRadius:14,padding:"12px 16px"}}>
+          <p style={{fontSize:13,color:B.blue,fontFamily:"'Nunito', sans-serif",fontWeight:700,margin:0,lineHeight:1.6}}>
+            501(c)(3) Nonprofit · EIN: 35-2983400<br/>Arlington, TX · <a href="https://alittlehelpapp.org" target="_blank" rel="noreferrer" style={{color:B.blue}}>alittlehelpapp.org</a>
+          </p>
+        </div>
       </div>
     ),
     how:(
       <div>
+        <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
         <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>How It Works ❓</h3>
         {[
           {emoji:"1️⃣",title:"Create an account",body:"Sign up with your email. We never sell your data or share your info."},
           {emoji:"2️⃣",title:"Set your location",body:"Tell us your zip code so we can show you posts from neighbors nearby."},
           {emoji:"3️⃣",title:"Post or browse",body:"Post a request for help, or browse offers from neighbors willing to lend a hand."},
           {emoji:"4️⃣",title:"Connect privately",body:"Message neighbors directly. Your contact info is never shared automatically."},
-          {emoji:"5️⃣",title:"Mark it complete",body:"When help is received, mark your post fulfilled. It adds to our kindness counter! 🌱"},
+          {emoji:"5️⃣",title:"Mark it complete",body:"When help is received, mark your post fulfilled — and add to our kindness counter! 🌱"},
         ].map(s=>(
           <div key={s.emoji} style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-start"}}>
             <div style={{fontSize:24,flexShrink:0}}>{s.emoji}</div>
@@ -127,33 +189,28 @@ const HamburgerMenu=({onClose,onSignOut})=>{
     ),
     safety:(
       <div>
+        <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
         <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>Safety Tips 🛡️</h3>
         {[
           "Always meet in public places — coffee shops, libraries, parking lots.",
           "Tell a friend or family member when and where you're meeting someone.",
           "Trust your gut. If something feels off, it probably is.",
-          "Never share your home address until you're comfortable.",
-          "A Little Help?! does not verify user identities. Use your own judgment.",
+          "Never share your home address until you're truly comfortable.",
+          "You know your community best — use your instincts.",
           "This app is not an emergency service. If you are in danger, call 911.",
           "Report any suspicious behavior using the Report button on any post.",
         ].map((tip,i)=>(
-          <div key={i} style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start"}}>
+          <div key={i} style={{display:"flex",gap:10,marginBottom:14,alignItems:"flex-start"}}>
             <div style={{width:6,height:6,borderRadius:"50%",background:B.blue,flexShrink:0,marginTop:6}}/>
             <div style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.6}}>{tip}</div>
           </div>
         ))}
       </div>
     ),
-    support:(
-      <div>
-        <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:12}}>Tech Support 🐛</h3>
-        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:20}}>Having trouble with the app? We want to hear about it so we can fix it!</p>
-        <a href="mailto:support@alittlehelpapp.org" style={{display:"block",padding:"14px 16px",borderRadius:14,background:B.blueLight,color:B.blue,fontWeight:800,fontSize:15,fontFamily:"'Nunito', sans-serif",textDecoration:"none",textAlign:"center",marginBottom:12}}>📧 Email Support</a>
-        <p style={{fontSize:12,color:B.textMuted,fontFamily:"'Nunito', sans-serif",textAlign:"center",lineHeight:1.5}}>We typically respond within 48 hours.<br/>Thank you for helping us improve! 🌱</p>
-      </div>
-    ),
+    support:<SupportForm onBack={()=>setPage(null)}/>,
     legal:(
       <div>
+        <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
         <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>Legal Notices 📋</h3>
         <div style={{marginBottom:20}}>
           <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Terms of Service</div>
@@ -165,15 +222,16 @@ const HamburgerMenu=({onClose,onSignOut})=>{
         </div>
         <div>
           <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Disclaimer</div>
-          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>A Little Help?! does not verify user identities and is not responsible for interactions between users. Nothing on this platform constitutes professional, medical, or legal advice. Governed by the laws of the State of Texas.</p>
+          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>A Little Help?! is not responsible for interactions between users. Nothing on this platform constitutes professional, medical, or legal advice. Governed by the laws of the State of Texas.</p>
         </div>
       </div>
     ),
     donate:(
       <div style={{textAlign:"center"}}>
+        <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0,display:"block"}}>← Back</button>
         <div style={{fontSize:56,marginBottom:16}}>💙</div>
         <h3 style={{fontSize:22,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:12}}>Keep A Little Help?! free</h3>
-        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:24,maxWidth:300,margin:"0 auto 24px"}}>A Little Help?! is a nonprofit app that will always be free. Like Wikipedia, we rely on the generosity of people who believe in our mission to keep the lights on.</p>
+        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7,marginBottom:24}}>Like Wikipedia, we rely on the generosity of people who believe in our mission to keep the lights on. Every contribution helps us stay free for everyone.</p>
         <a href={DONORBOX_URL} target="_blank" rel="noreferrer" style={{display:"block",padding:"16px",borderRadius:16,background:`linear-gradient(135deg, ${B.blue}, ${B.blueDark})`,color:"white",fontWeight:900,fontSize:16,fontFamily:"'Nunito', sans-serif",textDecoration:"none",boxShadow:`0 6px 20px ${B.blue}40`,marginBottom:16}}>💙 Donate to A Little Help?!</a>
         <p style={{fontSize:12,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.5}}>A Little Help?! is a registered 501(c)(3) nonprofit.<br/>Donations may be tax deductible. EIN: 35-2983400</p>
       </div>
@@ -184,30 +242,27 @@ const HamburgerMenu=({onClose,onSignOut})=>{
     <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
       <div style={{width:"85%",maxWidth:340,background:"white",height:"100%",overflowY:"auto",display:"flex",flexDirection:"column"}}>
-        <div style={{padding:"52px 20px 16px",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{padding:"52px 20px 16px",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <LogoSmall size={40}/>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",color:B.textMuted}}>✕</button>
         </div>
-        {page?(
-          <div style={{flex:1,padding:"24px 20px"}}>
-            <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
-            {pages[page]}
-          </div>
-        ):(
-          <div style={{flex:1,padding:"16px 0"}}>
-            {items.map(item=>(
-              <button key={item.content} onClick={()=>item.content==="donate"?window.open(DONORBOX_URL,"_blank"):setPage(item.content)} style={{width:"100%",padding:"16px 20px",background:"none",border:"none",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left"}}>
-                <span style={{fontSize:22,flexShrink:0}}>{item.emoji}</span>
-                <span style={{fontSize:15,fontWeight:700,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{item.label}</span>
-                <span style={{marginLeft:"auto",color:B.textMuted,fontSize:18}}>›</span>
+        <div style={{flex:1,padding:page?"24px 20px":"16px 0",overflowY:"auto"}}>
+          {page?pages[page]:(
+            <>
+              {items.map(item=>(
+                <button key={item.content} onClick={()=>setPage(item.content)} style={{width:"100%",padding:"16px 20px",background:"none",border:"none",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left"}}>
+                  <span style={{fontSize:22,flexShrink:0}}>{item.emoji}</span>
+                  <span style={{fontSize:15,fontWeight:700,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{item.label}</span>
+                  <span style={{marginLeft:"auto",color:B.textMuted,fontSize:18}}>›</span>
+                </button>
+              ))}
+              <button onClick={onSignOut} style={{width:"100%",padding:"16px 20px",background:"none",border:"none",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left"}}>
+                <span style={{fontSize:22,flexShrink:0}}>🚪</span>
+                <span style={{fontSize:15,fontWeight:700,color:B.red,fontFamily:"'Nunito', sans-serif"}}>Sign Out</span>
               </button>
-            ))}
-            <button onClick={onSignOut} style={{width:"100%",padding:"16px 20px",background:"none",border:"none",borderBottom:`1px solid ${B.warmGray}`,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left"}}>
-              <span style={{fontSize:22,flexShrink:0}}>🚪</span>
-              <span style={{fontSize:15,fontWeight:700,color:B.red,fontFamily:"'Nunito', sans-serif"}}>Sign Out</span>
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -344,9 +399,9 @@ const DisclaimerScreen=({onNext})=>{
       </div>
       <div style={{flex:1,display:"flex",flexDirection:"column",gap:18}}>
         <div style={{background:"white",borderRadius:18,padding:20,border:`1px solid ${B.warmGray}`,display:"flex",flexDirection:"column",gap:16}}>
-          <Check checked={checks.c1} onToggle={()=>toggle("c1")} label="I will meet helpers in public places" sublabel="Encourages all in-person meetings to happen in visible, public locations."/>
+          <Check checked={checks.c1} onToggle={()=>toggle("c1")} label="I will meet helpers in public places" sublabel="All in-person meetings should happen in visible, public locations."/>
           <div style={{height:1,background:B.warmGray}}/>
-          <Check checked={checks.c2} onToggle={()=>toggle("c2")} label="I understand users are not verified" sublabel="A Little Help?! does not conduct background checks. Use your own judgment."/>
+          <Check checked={checks.c2} onToggle={()=>toggle("c2")} label="I will use good judgment when meeting neighbors" sublabel="You know your community best — trust your instincts."/>
           <div style={{height:1,background:B.warmGray}}/>
           <Check checked={checks.c3} onToggle={()=>toggle("c3")} label="This is not an emergency service" sublabel="If you are in danger, call 911."/>
           <div style={{height:1,background:B.warmGray}}/>
@@ -488,7 +543,7 @@ const MessageThreadScreen=({thread,onBack,session})=>{
   };
   useEffect(()=>{
     loadMessages();
-    const sub=supabase.channel("messages-thread-v2").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadMessages()).subscribe();
+    const sub=supabase.channel("msg-thread-v3").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadMessages()).subscribe();
     return()=>sub.unsubscribe();
   },[]);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
@@ -549,7 +604,7 @@ const MessagesScreen=({session,onOpenThread})=>{
   };
   useEffect(()=>{
     loadThreads();
-    const sub=supabase.channel("msg-list-v3").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadThreads()).subscribe();
+    const sub=supabase.channel("msg-list-v4").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadThreads()).subscribe();
     return()=>sub.unsubscribe();
   },[session]);
   return(
@@ -710,7 +765,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   useEffect(()=>{loadKindnessCount();},[]);
   useEffect(()=>{
     loadUnreadCount();
-    const sub=supabase.channel("unread-v3").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadUnreadCount()).subscribe();
+    const sub=supabase.channel("unread-v4").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadUnreadCount()).subscribe();
     return()=>sub.unsubscribe();
   },[session]);
 
@@ -743,10 +798,19 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
               </button>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <LogoSmall size={36}/>
-                <div style={{fontSize:15,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1}}>A Little Help?!</div>
+                <div style={{fontSize:15,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif"}}>A Little Help?!</div>
               </div>
               <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={36}/>
             </div>
+
+            {/* Kindness counter — small, elegant, corner badge */}
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+              <div style={{border:`1.5px solid ${B.blue}`,borderRadius:10,padding:"4px 10px",background:"white",display:"inline-flex",alignItems:"center",gap:5}}>
+                <span style={{fontSize:11}}>💙</span>
+                <span style={{fontSize:11,fontWeight:800,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()} acts of kindness & counting</span>
+              </div>
+            </div>
+
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[1,5,10,25].map(r=>(
                 <button key={r} onClick={()=>setRadiusMiles(r)} style={{padding:"4px 12px",borderRadius:99,border:`2px solid ${radiusMiles===r?B.blue:B.warmGray}`,background:radiusMiles===r?B.blueLight:"white",color:radiusMiles===r?B.blue:B.textMuted,fontWeight:700,fontSize:12,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>
@@ -764,13 +828,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
           </div>
 
           <div style={{padding:"20px 20px 0"}}>
-            {/* Kindness counter */}
-            <div style={{background:`linear-gradient(135deg, ${B.green}, #1A5C36)`,borderRadius:18,padding:"16px 20px",color:"white",boxShadow:`0 4px 20px ${B.green}40`,marginBottom:12,textAlign:"center"}}>
-              <div style={{fontSize:11,opacity:0.85,fontWeight:700,fontFamily:"'Nunito', sans-serif",letterSpacing:1,marginBottom:4}}>ACTS OF KINDNESS AND COUNTING</div>
-              <div style={{fontSize:36,fontWeight:900,letterSpacing:"-1px",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()} 🌱</div>
-            </div>
-
-            {/* Post counter */}
             <div style={{background:`linear-gradient(135deg, ${B.blue}, ${B.blueDark})`,borderRadius:18,padding:"14px 20px",display:"flex",alignItems:"center",gap:16,color:"white",boxShadow:`0 4px 20px ${B.blue}40`,marginBottom:20}}>
               <div style={{fontSize:26}}>📍</div>
               <div>
