@@ -790,21 +790,18 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       ):(
         <>
           <div style={{background:"white",padding:"52px 20px 14px",borderBottom:`1px solid ${B.warmGray}`,position:"sticky",top:0,zIndex:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 8px 4px 0",display:"flex",flexDirection:"column",gap:5}}>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
               </button>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <LogoSmall size={36}/>
-                <div style={{fontSize:15,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif"}}>A Little Help?!</div>
-              </div>
+              <Logo size={52}/>
               <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={36}/>
             </div>
 
-            {/* Kindness counter — small, elegant, corner badge */}
-            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+            {/* Kindness counter — centered */}
+            <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
               <div style={{border:`1.5px solid ${B.blue}`,borderRadius:10,padding:"4px 10px",background:"white",display:"inline-flex",alignItems:"center",gap:5}}>
                 <span style={{fontSize:11}}>💙</span>
                 <span style={{fontSize:11,fontWeight:800,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()} acts of kindness & counting</span>
