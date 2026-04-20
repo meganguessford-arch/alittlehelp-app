@@ -790,22 +790,23 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       ):(
         <>
           <div style={{background:"white",padding:"52px 20px 14px",borderBottom:`1px solid ${B.warmGray}`,position:"sticky",top:0,zIndex:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 8px 4px 0",display:"flex",flexDirection:"column",gap:5}}>
+            {/* Header row — hamburger | logo centered | avatar */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
                 <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
               </button>
-              <Logo size={160}/>
-              <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={72}/>
+              <Logo size={120}/>
+              <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={56}/>
             </div>
 
-            {/* Kindness counter — pink outline, white bg, pink number, blue text */}
+            {/* Kindness counter — centered below logo */}
             <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
-              <div style={{border:`2px solid #e91e8c`,borderRadius:12,padding:"6px 14px",background:"white",display:"inline-flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:14}}>🩷</span>
-                <span style={{fontSize:13,fontWeight:800,color:"#e91e8c",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()}</span>
-                <span style={{fontSize:13,fontWeight:800,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>acts of kindness & counting</span>
+              <div style={{border:`2px solid #e91e8c`,borderRadius:12,padding:"5px 12px",background:"white",display:"inline-flex",alignItems:"center",gap:5}}>
+                <span style={{fontSize:13}}>🩷</span>
+                <span style={{fontSize:12,fontWeight:800,color:"#e91e8c",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()}</span>
+                <span style={{fontSize:12,fontWeight:700,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>acts of kindness & counting</span>
               </div>
             </div>
 
