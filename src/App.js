@@ -765,7 +765,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const[loading,setLoading]=useState(true);
   const[activeCategory,setActiveCategory]=useState(null);
   const[radiusMiles,setRadiusMiles]=useState(1);
-  const[sortNewest,setSortNewest]=useState(false);
   const[showPost,setShowPost]=useState(false);
   const[showMessageComposer,setShowMessageComposer]=useState(null);
   const[newMsg,setNewMsg]=useState("");
@@ -779,7 +778,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
 
   const loadPosts=async()=>{
     setLoading(true);
-    const{data,error}=await supabase.from("posts").select("*").eq("fulfilled",false).order("created_at",{ascending:true});
+    const{data,error}=await supabase.from("posts").select("*").eq("fulfilled",false).order("created_at",{ascending:false});
     if(!error&&data){
       const userCoords=currentLocation?.coords;
       const filtered=data.filter(post=>{
@@ -841,8 +840,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
     setShowMessageComposer(null);setNewMsg("");setActiveTab("messages");
   };
 
-  const basePosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
-  const displayPosts=[...basePosts].sort((a,b)=>sortNewest?(new Date(b.created_at||0)-new Date(a.created_at||0)):(new Date(a.created_at||0)-new Date(b.created_at||0)));
+  const displayPosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
 
   if(activeThread)return<MessageThreadScreen thread={activeThread} onBack={()=>{setActiveThread(null);loadUnreadCount();}} session={session}/>;
 
@@ -879,12 +877,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                 <span style={{fontSize:12,fontWeight:800,color:"#e91e8c",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()}</span>
                 <span style={{fontSize:12,fontWeight:700,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>acts of kindness & counting</span>
               </div>
-            </div>
-
-            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
-              <button onClick={()=>setSortNewest(s=>!s)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif",fontWeight:700,padding:"2px 0"}}>
-                {sortNewest?"Showing: newest first ↓":"Showing: oldest first ↑"} (tap to change)
-              </button>
             </div>
 
             <div style={{display:"flex",gap:8,marginBottom:10}}>
