@@ -766,7 +766,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const[activeCategory,setActiveCategory]=useState(null);
   const[radiusMiles,setRadiusMiles]=useState(1);
   const[sortNewest,setSortNewest]=useState(false);
-  const[sortNewest,setSortNewest]=useState(false);
   const[showPost,setShowPost]=useState(false);
   const[showMessageComposer,setShowMessageComposer]=useState(null);
   const[newMsg,setNewMsg]=useState("");
