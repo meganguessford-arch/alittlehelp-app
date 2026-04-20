@@ -41,7 +41,20 @@ const ZIP_TO_CITY = {
 const getCityFromZip=(zip)=>ZIP_TO_CITY[zip]||(zip.length===5?`ZIP ${zip}`:"");
 const getCoordsFromZip=(zip)=>ZIP_COORDS[zip]||null;
 function getDistanceMiles(lat1,lon1,lat2,lon2){const R=3958.8,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-
+const timeAgo = (dateStr) => {
+  const now = new Date();
+  const then = new Date(dateStr);
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return then.toLocaleDateString([], { month: "short", day: "numeric" });
+};
 const uploadAvatar=async(file,userId)=>{
   const ext=file.name.split(".").pop();
   const path=`${userId}/avatar.${ext}`;
