@@ -790,15 +790,19 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       ):(
         <>
           <div style={{background:"white",padding:"52px 20px 14px",borderBottom:`1px solid ${B.warmGray}`,position:"sticky",top:0,zIndex:10}}>
-            {/* Header row — hamburger | logo centered | avatar */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
-                <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
-                <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
-                <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
-              </button>
+            {/* Header row — equal width sides so logo is perfectly centered */}
+            <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
+              <div style={{flex:1,display:"flex",alignItems:"center"}}>
+                <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:5}}>
+                  <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
+                  <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
+                  <div style={{width:22,height:2.5,background:B.text,borderRadius:2}}/>
+                </button>
+              </div>
               <Logo size={120}/>
-              <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={56}/>
+              <div style={{flex:1,display:"flex",justifyContent:"flex-end"}}>
+                <Avatar src={userProfile?.photoPreview} initials={(userProfile?.name||"Y").charAt(0)} size={56}/>
+              </div>
             </div>
 
             {/* Kindness counter — centered below logo */}
