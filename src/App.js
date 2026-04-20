@@ -842,7 +842,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   };
 
   const basePosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
-  const displayPosts=sortNewest?[...basePosts].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)):[...basePosts].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const displayPosts=[...basePosts].sort((a,b)=>sortNewest?(new Date(b.created_at||0)-new Date(a.created_at||0)):(new Date(a.created_at||0)-new Date(b.created_at||0)));
 
   if(activeThread)return<MessageThreadScreen thread={activeThread} onBack={()=>{setActiveThread(null);loadUnreadCount();}} session={session}/>;
 
