@@ -710,6 +710,56 @@ const ProfileTab=({userProfile,setUserProfile,session,onChangeLocation})=>{
   );
 };
 
+const ReportModal=({post,onClose,onReport,onBlock})=>{
+  const[step,setStep]=useState("menu"); // menu | report | confirm
+  const[reason,setReason]=useState("");
+  const[details,setDetails]=useState("");
+  const[done,setDone]=useState(false);
+  const reasons=["Spam or fake post","Harassment or threatening behavior","Inappropriate content","Scam or fraudulent activity","Other"];
+  if(done)return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px"}}>
+      <div style={{background:"white",borderRadius:20,padding:28,width:"100%",maxWidth:340,textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:12}}>✅</div>
+        <h3 style={{fontSize:18,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Report submitted</h3>
+        <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:20}}>Thank you for helping keep A Little Help?! safe. We'll review this report promptly.</p>
+        <Btn onClick={onClose}>Done</Btn>
+      </div>
+    </div>
+  );
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:100,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxHeight:"85vh",overflowY:"auto"}}>
+        {step==="menu"&&(
+          <>
+            <h3 style={{fontSize:18,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:6}}>What would you like to do?</h3>
+            <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:20}}>re: post by {post.user_name}</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>setStep("report")} style={{padding:"14px 16px",borderRadius:14,border:`2px solid ${B.warmGray}`,background:"white",textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:15,color:B.text}}>🚩 Report this user</button>
+              <button onClick={()=>{onBlock(post.user_id);}} style={{padding:"14px 16px",borderRadius:14,border:`2px solid ${B.redLight}`,background:B.redLight,textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:15,color:B.red}}>🚫 Block this user</button>
+              <p style={{fontSize:12,color:B.textMuted,fontFamily:"'Nunito', sans-serif",textAlign:"center",marginTop:4}}>Blocking hides their posts from your feed. Reporting alerts our team.</p>
+            </div>
+          </>
+        )}
+        {step==="report"&&(
+          <>
+            <h3 style={{fontSize:18,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>Why are you reporting this?</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+              {reasons.map(r=>(
+                <button key={r} onClick={()=>setReason(r)} style={{padding:"12px 16px",borderRadius:12,border:`2px solid ${reason===r?B.blue:B.warmGray}`,background:reason===r?B.blueLight:"white",textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:14,color:reason===r?B.blue:B.text}}>{r}</button>
+              ))}
+            </div>
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:13,fontWeight:800,color:B.text,fontFamily:"'Nunito', sans-serif",display:"block",marginBottom:6}}>Additional details (optional)</label>
+              <textarea value={details} onChange={e=>setDetails(e.target.value)} placeholder="Tell us more..." rows={3} style={{width:"100%",padding:"12px 16px",borderRadius:12,border:`2px solid ${B.warmGray}`,fontSize:14,fontFamily:"'Nunito', sans-serif",outline:"none",boxSizing:"border-box",color:B.text,resize:"none"}}/>
+            </div>
+            <Btn onClick={async()=>{await onReport(post,reason,details);setDone(true);}} disabled={!reason}>Submit report</Btn>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,session,currentLocation,onChangeLocation})=>{
   const[posts,setPosts]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -721,6 +771,8 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const[activeThread,setActiveThread]=useState(null);
   const[unreadCount,setUnreadCount]=useState(0);
   const[confirmDelete,setConfirmDelete]=useState(null);
+  const[showReport,setShowReport]=useState(null);
+  const[blockedUsers,setBlockedUsers]=useState([]);
   const[kindnessCount,setKindnessCount]=useState(0);
   const[showMenu,setShowMenu]=useState(false);
 
@@ -754,6 +806,19 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
     setConfirmDelete(null);loadPosts();
   };
 
+  const submitReport=async(post,reason,details)=>{
+    await supabase.from("reports").insert({reporter_id:session.user.id,reported_user_id:post.user_id,post_id:post.id,reason,details});
+    await fetch("https://formspree.io/f/mwvaqlvk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:"New user report",reporter:session.user.email,reported_user_id:post.user_id,post_title:post.title,reason,details})});
+    setShowReport(null);
+  };
+
+  const blockUser=async(userId)=>{
+    const newBlocked=[...blockedUsers,userId];
+    await supabase.from("profiles").update({blocked_users:newBlocked}).eq("id",session.user.id);
+    setBlockedUsers(newBlocked);
+    setShowReport(null);
+  };
+
   const markFulfilled=async(postId)=>{
     await supabase.from("posts").update({fulfilled:true}).eq("id",postId);
     await supabase.from("kindness_count").update({count:kindnessCount+1}).eq("id",1);
@@ -775,7 +840,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
     setShowMessageComposer(null);setNewMsg("");setActiveTab("messages");
   };
 
-  const displayPosts=activeCategory?posts.filter(p=>p.category===activeCategory):posts;
+  const displayPosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
 
   if(activeThread)return<MessageThreadScreen thread={activeThread} onBack={()=>{setActiveThread(null);loadUnreadCount();}} session={session}/>;
 
@@ -867,9 +932,12 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                     <div style={{fontSize:15,fontWeight:800,color:B.text,marginBottom:6,fontFamily:"'Nunito', sans-serif"}}>{post.emoji} {post.title}</div>
                     <div style={{fontSize:13,color:B.textMuted,lineHeight:1.5,marginBottom:14,fontFamily:"'Nunito', sans-serif"}}>{post.description}</div>
                     {post.user_id!==session?.user?.id?(
-                      <button onClick={()=>setShowMessageComposer(post)} style={{width:"100%",padding:"10px",borderRadius:12,border:`2px solid ${B.blue}`,background:B.blue,color:"white",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>
-                        {post.type==="request"?"💙 I can help!":"🙌 I'd love that!"}
-                      </button>
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        <button onClick={()=>setShowMessageComposer(post)} style={{width:"100%",padding:"10px",borderRadius:12,border:`2px solid ${B.blue}`,background:B.blue,color:"white",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>
+                          {post.type==="request"?"💙 I can help!":"🙌 I'd love that!"}
+                        </button>
+                        <button onClick={()=>setShowReport(post)} style={{width:"100%",padding:"7px",borderRadius:12,border:"none",background:"transparent",color:B.textMuted,fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🚩 Report or block this user</button>
+                      </div>
                     ):(
                       <div style={{display:"flex",gap:8}}>
                         <button onClick={()=>markFulfilled(post.id)} style={{flex:2,padding:"8px 12px",borderRadius:12,background:B.greenLight,border:`2px solid ${B.green}`,color:B.green,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>✅ Help received!</button>
@@ -883,6 +951,9 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
           </div>
         </>
       )}
+
+      {/* Report/Block Modal */}
+      {showReport&&<ReportModal post={showReport} onClose={()=>setShowReport(null)} onReport={submitReport} onBlock={blockUser}/>}
 
       {confirmDelete&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px"}} onClick={()=>setConfirmDelete(null)}>
