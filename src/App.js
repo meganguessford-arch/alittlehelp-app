@@ -922,7 +922,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                         <Avatar initials={post.user_initials||"N"} size={36}/>
                         <div>
                           <div style={{fontWeight:700,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{post.user_name||"Neighbor"}</div>
-                          <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>📍 {post.city} · {timeAgo(post.created_at)}</div>
+                          <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>📍 {post.city} · {new Date(post.created_at).toLocaleDateString()}</div>
                         </div>
                       </div>
                       <span style={{background:post.type==="request"?B.blueLight:B.greenLight,color:post.type==="request"?B.blue:B.green,borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:800,fontFamily:"'Nunito', sans-serif"}}>
