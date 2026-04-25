@@ -579,7 +579,7 @@ const MessageThreadScreen=({thread,onBack,session})=>{
   );
 };
 
-const MessagesScreen=({session,onOpenThread})=>{
+const MessagesScreen=({session,onOpenThread,notifications=[],onOpenNotifications})=>{
   const[threads,setThreads]=useState([]);
   const[loading,setLoading]=useState(true);
   const loadThreads=async()=>{
@@ -602,8 +602,12 @@ const MessagesScreen=({session,onOpenThread})=>{
   },[session]);
   return(
     <div style={{minHeight:"100vh",background:B.offWhite,paddingBottom:100}}>
-      <div style={{background:"white",padding:"52px 20px 16px",borderBottom:`1px solid ${B.warmGray}`}}>
+      <div style={{background:"white",padding:"52px 20px 16px",borderBottom:`1px solid ${B.warmGray}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <h2 style={{fontSize:22,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",margin:0}}>Messages 💬</h2>
+        <button onClick={onOpenNotifications} style={{background:"none",border:"none",cursor:"pointer",position:"relative",padding:4}}>
+          <span style={{fontSize:24}}>🔔</span>
+          {notifications.filter(n=>!n.read).length>0&&<div style={{position:"absolute",top:0,right:0,width:16,height:16,borderRadius:"50%",background:"#e91e8c",color:"white",fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito', sans-serif"}}>{notifications.filter(n=>!n.read).length}</div>}
+        </button>
       </div>
       <div style={{padding:"16px"}}>
         {loading?<div style={{textAlign:"center",padding:"40px 0",color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>Loading... 🌱</div>:
@@ -753,6 +757,48 @@ const ReportModal=({post,onClose,onReport,onBlock})=>{
   );
 };
 
+const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,session})=>{
+  const unread=notifications.filter(n=>!n.read).length;
+  const markAllRead=async()=>{
+    for(const n of notifications.filter(n=>!n.read)){
+      await supabase.from("notifications").update({read:true}).eq("id",n.id);
+    }
+    onMarkRead();
+  };
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:150,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxHeight:"80vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",margin:0}}>Notifications 🔔</h3>
+          {unread>0&&<button onClick={markAllRead} style={{background:"none",border:"none",color:B.blue,fontWeight:700,fontSize:13,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>Mark all read</button>}
+        </div>
+        {notifications.length===0?(
+          <div style={{textAlign:"center",padding:"40px 0",color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔔</div>
+            <div style={{fontWeight:700}}>No notifications yet</div>
+          </div>
+        ):notifications.map(n=>(
+          <div key={n.id} style={{background:n.read?"white":B.blueLight,borderRadius:16,padding:"14px 16px",marginBottom:10,border:`1px solid ${n.read?B.warmGray:B.blue}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <div style={{width:36,height:36,borderRadius:"50%",background:`linear-gradient(135deg, ${B.blue}, ${B.blueDark})`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:16}}>{n.type==="expired"?"🌱":"⏰"}</span>
+              </div>
+              <div>
+                <div style={{fontWeight:800,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif"}}>A Little Help?! Team</div>
+                <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>{timeAgo(n.created_at)}</div>
+              </div>
+              {!n.read&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:B.blue,flexShrink:0}}/>}
+            </div>
+            <div style={{fontWeight:700,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:4}}>{n.title}</div>
+            <div style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.5,marginBottom:n.type==="expired"?12:0}}>{n.message}</div>
+            {n.type==="expired"&&<button onClick={()=>onRepost(n)} style={{width:"100%",padding:"8px",borderRadius:10,background:B.blue,border:"none",color:"white",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>Post again 🌱</button>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,session,currentLocation,onChangeLocation})=>{
   const[posts,setPosts]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -768,8 +814,9 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const[blockedUsers,setBlockedUsers]=useState([]);
   const[kindnessCount,setKindnessCount]=useState(0);
   const[showMenu,setShowMenu]=useState(false);
-  // CHANGE 3: Sort toggle — oldest first by default
   const[sortNewest,setSortNewest]=useState(false);
+  const[notifications,setNotifications]=useState([]);
+  const[showNotifications,setShowNotifications]=useState(false);
 
   const loadPosts=async()=>{
     setLoading(true);
@@ -788,6 +835,53 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const loadKindnessCount=async()=>{
     const{data}=await supabase.from("kindness_count").select("count").eq("id",1).single();
     if(data)setKindnessCount(data.count);
+  };
+
+  const loadNotifications=async()=>{
+    if(!session?.user?.id)return;
+    const{data}=await supabase.from("notifications").select("*").eq("user_id",session.user.id).order("created_at",{ascending:false});
+    if(data)setNotifications(data);
+  };
+
+  const checkPostExpiry=async()=>{
+    if(!session?.user?.id)return;
+    const now=new Date();
+    const day5Warning=new Date(now.getTime()-(5*24*60*60*1000));
+    const day7Delete=new Date(now.getTime()-(7*24*60*60*1000));
+    // Get user's unfulfilled posts
+    const{data:userPosts}=await supabase.from("posts").select("*").eq("user_id",session.user.id).eq("fulfilled",false);
+    if(!userPosts)return;
+    for(const post of userPosts){
+      const createdAt=new Date(post.created_at);
+      // Auto-delete posts older than 7 days
+      if(createdAt<=day7Delete){
+        await supabase.from("posts").delete().eq("id",post.id);
+        await supabase.from("notifications").insert({
+          user_id:session.user.id,
+          title:"Your post has expired 🌱",
+          message:`Your post "${post.title}" has been removed after 7 days. If you still need help, tap below to post again!`,
+          type:"expired",
+          post_id:post.id,
+          read:false
+        });
+      }
+      // Warn at 5 days - check if we already sent this warning
+      else if(createdAt<=day5Warning){
+        const{data:existing}=await supabase.from("notifications").select("id").eq("user_id",session.user.id).eq("post_id",post.id).eq("type","expiring");
+        if(!existing||existing.length===0){
+          await supabase.from("notifications").insert({
+            user_id:session.user.id,
+            title:"Your post is expiring soon ⏰",
+            message:`Your post "${post.title}" expires in 2 days. Did you get help? Mark it complete or it will be removed.`,
+            type:"expiring",
+            post_id:post.id,
+            read:false
+          });
+        }
+      }
+    }
+    loadNotifications();
+    loadPosts();
   };
 
   const loadUnreadCount=async()=>{
@@ -823,6 +917,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
 
   useEffect(()=>{loadPosts();},[radiusMiles,currentLocation]);
   useEffect(()=>{loadKindnessCount();},[]);
+  useEffect(()=>{loadNotifications();checkPostExpiry();},[session]);
   useEffect(()=>{
     loadUnreadCount();
     const sub=supabase.channel("unread-v4").on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadUnreadCount()).subscribe();
@@ -843,10 +938,11 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
 
   return(
     <div style={{minHeight:"100vh",background:B.offWhite,paddingBottom:100}}>
-      {showMenu&&<HamburgerMenu onClose={()=>setShowMenu(false)} onSignOut={()=>{setShowMenu(false);onSignOut();}}/>}
+      {showMenu&&<HamburgerMenu onClose={()=>setShowMenu(false)} onSignOut={()=>{setShowMenu(false);onSignOut();}}/> }
+      {showNotifications&&<NotificationsScreen notifications={notifications} onClose={()=>setShowNotifications(false)} onMarkRead={()=>{loadNotifications();setShowNotifications(false);}} onRepost={(n)=>{setShowNotifications(false);setShowPost(true);}} session={session}/>}
 
       {activeTab==="messages"?(
-        <MessagesScreen session={session} onOpenThread={(t)=>setActiveThread({...t,my_id:session.user.id})}/>
+        <MessagesScreen session={session} onOpenThread={(t)=>setActiveThread({...t,my_id:session.user.id})} notifications={notifications} onOpenNotifications={()=>setShowNotifications(true)}/>
       ):activeTab==="profile"?(
         <ProfileTab userProfile={userProfile} setUserProfile={setUserProfile} session={session} onChangeLocation={onChangeLocation}/>
       ):(
@@ -990,7 +1086,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       {showPost&&<CreatePostModal onClose={()=>setShowPost(false)} onPost={loadPosts} userProfile={userProfile} session={session} currentLocation={currentLocation}/>}
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:`1px solid ${B.warmGray}`,padding:"10px 0 24px",display:"flex",justifyContent:"space-around",zIndex:20}}>
-        {[{id:"feed",emoji:"🏠",label:"Feed"},{id:"messages",emoji:"💬",label:"Messages",badge:unreadCount},{id:"profile",emoji:"👤",label:"Profile"}].map(item=>(
+        {[{id:"feed",emoji:"🏠",label:"Feed"},{id:"messages",emoji:"💬",label:"Messages",badge:unreadCount+notifications.filter(n=>!n.read).length},{id:"profile",emoji:"👤",label:"Profile"}].map(item=>(
           <div key={item.id} onClick={()=>setActiveTab(item.id)} style={{textAlign:"center",cursor:"pointer",position:"relative"}}>
             <div style={{fontSize:22}}>{item.emoji}</div>
             {item.badge>0&&<div style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:B.blue,color:"white",fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito', sans-serif"}}>{item.badge}</div>}
