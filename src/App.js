@@ -38,9 +38,28 @@ const ZIP_TO_CITY = {
   "76248":"Keller, TX","76051":"Grapevine, TX","75019":"Coppell, TX","76028":"Burleson, TX",
 };
 
+// CHANGE 1: Accept ALL zip codes - unknown zips just show "ZIP XXXXX"
 const getCityFromZip=(zip)=>ZIP_TO_CITY[zip]||(zip.length===5?`ZIP ${zip}`:"");
 const getCoordsFromZip=(zip)=>ZIP_COORDS[zip]||null;
+
 function getDistanceMiles(lat1,lon1,lat2,lon2){const R=3958.8,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180,a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+
+// CHANGE 2: timeAgo function for friendly timestamps
+const timeAgo=(dateStr)=>{
+  if(!dateStr)return"";
+  const now=new Date();
+  const then=new Date(dateStr);
+  const diffMs=now-then;
+  const diffMins=Math.floor(diffMs/60000);
+  const diffHours=Math.floor(diffMins/60);
+  const diffDays=Math.floor(diffHours/24);
+  if(diffMins<1)return"just now";
+  if(diffMins<60)return`${diffMins}m ago`;
+  if(diffHours<24)return`${diffHours}h ago`;
+  if(diffDays===1)return"yesterday";
+  if(diffDays<7)return`${diffDays}d ago`;
+  return then.toLocaleDateString([],{month:"short",day:"numeric"});
+};
 
 const uploadAvatar=async(file,userId)=>{
   const ext=file.name.split(".").pop();
@@ -85,23 +104,17 @@ const Check=({checked,onToggle,label,sublabel})=>(
   </div>
 );
 
-// SUPPORT FORM
 const SupportForm=({onBack})=>{
   const[name,setName]=useState("");
   const[email,setEmail]=useState("");
   const[message,setMessage]=useState("");
   const[submitted,setSubmitted]=useState(false);
   const[loading,setLoading]=useState(false);
-
   const handleSubmit=async()=>{
     setLoading(true);
-    try{
-      await fetch(FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,message})});
-      setSubmitted(true);
-    }catch(e){}
+    try{await fetch(FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,message})});setSubmitted(true);}catch(e){}
     setLoading(false);
   };
-
   if(submitted)return(
     <div style={{textAlign:"center",padding:"40px 20px"}}>
       <div style={{fontSize:48,marginBottom:16}}>💙</div>
@@ -110,7 +123,6 @@ const SupportForm=({onBack})=>{
       <Btn onClick={onBack} variant="ghost">← Back</Btn>
     </div>
   );
-
   return(
     <div>
       <button onClick={onBack} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
@@ -133,7 +145,6 @@ const SupportForm=({onBack})=>{
   );
 };
 
-// HAMBURGER MENU
 const HamburgerMenu=({onClose,onSignOut})=>{
   const[page,setPage]=useState(null);
   const items=[
@@ -144,25 +155,16 @@ const HamburgerMenu=({onClose,onSignOut})=>{
     {emoji:"📋",label:"Legal Notices",content:"legal"},
     {emoji:"💰",label:"Support Us — Keep the App Free",content:"donate"},
   ];
-
   const pages={
     about:(
       <div>
         <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
         <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>About A Little Help?! 🌱</h3>
-        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>
-          "We believe that giving and receiving are both sacred — and that there is enough for everyone.
-        </p>
-        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>
-          A Little Help?! exists because we know the world gets better when vulnerability meets compassion, when we show up for each other. Not governments. Not corporations. People.
-        </p>
-        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:20,fontStyle:"italic"}}>
-          Sometimes all it takes to heal is a little help." 🌱
-        </p>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>"We believe that giving and receiving are both sacred — and that there is enough for everyone.</p>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:14,fontStyle:"italic"}}>A Little Help?! exists because we know the world gets better when vulnerability meets compassion, when we show up for each other. Not governments. Not corporations. People.</p>
+        <p style={{fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",lineHeight:1.8,marginBottom:20,fontStyle:"italic"}}>Sometimes all it takes to heal is a little help." 🌱</p>
         <div style={{background:B.blueLight,borderRadius:14,padding:"12px 16px"}}>
-          <p style={{fontSize:13,color:B.blue,fontFamily:"'Nunito', sans-serif",fontWeight:700,margin:0,lineHeight:1.6}}>
-            501(c)(3) Nonprofit · EIN: 35-2983400<br/>Arlington, TX · <a href="https://alittlehelpapp.org" target="_blank" rel="noreferrer" style={{color:B.blue}}>alittlehelpapp.org</a>
-          </p>
+          <p style={{fontSize:13,color:B.blue,fontFamily:"'Nunito', sans-serif",fontWeight:700,margin:0,lineHeight:1.6}}>501(c)(3) Nonprofit · EIN: 35-2983400<br/>Arlington, TX · <a href="https://alittlehelpapp.org" target="_blank" rel="noreferrer" style={{color:B.blue}}>alittlehelpapp.org</a></p>
         </div>
       </div>
     ),
@@ -191,15 +193,7 @@ const HamburgerMenu=({onClose,onSignOut})=>{
       <div>
         <button onClick={()=>setPage(null)} style={{background:"none",border:"none",color:B.blue,fontWeight:800,fontSize:14,fontFamily:"'Nunito', sans-serif",cursor:"pointer",marginBottom:16,padding:0}}>← Back</button>
         <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:16}}>Safety Tips 🛡️</h3>
-        {[
-          "Always meet in public places — coffee shops, libraries, parking lots.",
-          "Tell a friend or family member when and where you're meeting someone.",
-          "Trust your gut. If something feels off, it probably is.",
-          "Never share your home address until you're truly comfortable.",
-          "You know your community best — use your instincts.",
-          "This app is not an emergency service. If you are in danger, call 911.",
-          "Report any suspicious behavior using the Report button on any post.",
-        ].map((tip,i)=>(
+        {["Always meet in public places — coffee shops, libraries, parking lots.","Tell a friend or family member when and where you're meeting someone.","Trust your gut. If something feels off, it probably is.","Never share your home address until you're truly comfortable.","You know your community best — use your instincts.","This app is not an emergency service. If you are in danger, call 911.","Report any suspicious behavior using the Report button on any post."].map((tip,i)=>(
           <div key={i} style={{display:"flex",gap:10,marginBottom:14,alignItems:"flex-start"}}>
             <div style={{width:6,height:6,borderRadius:"50%",background:B.blue,flexShrink:0,marginTop:6}}/>
             <div style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.6}}>{tip}</div>
@@ -237,7 +231,6 @@ const HamburgerMenu=({onClose,onSignOut})=>{
       </div>
     ),
   };
-
   return(
     <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
       <div style={{flex:1,background:"rgba(0,0,0,0.5)"}} onClick={onClose}/>
@@ -711,7 +704,7 @@ const ProfileTab=({userProfile,setUserProfile,session,onChangeLocation})=>{
 };
 
 const ReportModal=({post,onClose,onReport,onBlock})=>{
-  const[step,setStep]=useState("menu"); // menu | report | confirm
+  const[step,setStep]=useState("menu");
   const[reason,setReason]=useState("");
   const[details,setDetails]=useState("");
   const[done,setDone]=useState(false);
@@ -735,7 +728,7 @@ const ReportModal=({post,onClose,onReport,onBlock})=>{
             <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:20}}>re: post by {post.user_name}</p>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <button onClick={()=>setStep("report")} style={{padding:"14px 16px",borderRadius:14,border:`2px solid ${B.warmGray}`,background:"white",textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:15,color:B.text}}>🚩 Report this user</button>
-              <button onClick={()=>{onBlock(post.user_id);}} style={{padding:"14px 16px",borderRadius:14,border:`2px solid ${B.redLight}`,background:B.redLight,textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:15,color:B.red}}>🚫 Block this user</button>
+              <button onClick={()=>onBlock(post.user_id)} style={{padding:"14px 16px",borderRadius:14,border:`2px solid ${B.redLight}`,background:B.redLight,textAlign:"left",cursor:"pointer",fontFamily:"'Nunito', sans-serif",fontWeight:700,fontSize:15,color:B.red}}>🚫 Block this user</button>
               <p style={{fontSize:12,color:B.textMuted,fontFamily:"'Nunito', sans-serif",textAlign:"center",marginTop:4}}>Blocking hides their posts from your feed. Reporting alerts our team.</p>
             </div>
           </>
@@ -775,10 +768,12 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   const[blockedUsers,setBlockedUsers]=useState([]);
   const[kindnessCount,setKindnessCount]=useState(0);
   const[showMenu,setShowMenu]=useState(false);
+  // CHANGE 3: Sort toggle — oldest first by default
+  const[sortNewest,setSortNewest]=useState(false);
 
   const loadPosts=async()=>{
     setLoading(true);
-    const{data,error}=await supabase.from("posts").select("*").eq("fulfilled",false).order("created_at",{ascending:false});
+    const{data,error}=await supabase.from("posts").select("*").eq("fulfilled",false).order("created_at",{ascending:true});
     if(!error&&data){
       const userCoords=currentLocation?.coords;
       const filtered=data.filter(post=>{
@@ -808,7 +803,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
 
   const submitReport=async(post,reason,details)=>{
     await supabase.from("reports").insert({reporter_id:session.user.id,reported_user_id:post.user_id,post_id:post.id,reason,details});
-    await fetch("https://formspree.io/f/mwvaqlvk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:"New user report",reporter:session.user.email,reported_user_id:post.user_id,post_title:post.title,reason,details})});
+    await fetch(FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:"New user report",reporter:session.user.email,reported_user_id:post.user_id,post_title:post.title,reason,details})});
     setShowReport(null);
   };
 
@@ -840,7 +835,9 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
     setShowMessageComposer(null);setNewMsg("");setActiveTab("messages");
   };
 
-  const displayPosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
+  // Sort posts — default oldest first, toggle to newest
+  const basePosts=(activeCategory?posts.filter(p=>p.category===activeCategory):posts).filter(p=>!blockedUsers.includes(p.user_id));
+  const displayPosts=sortNewest?[...basePosts].reverse():basePosts;
 
   if(activeThread)return<MessageThreadScreen thread={activeThread} onBack={()=>{setActiveThread(null);loadUnreadCount();}} session={session}/>;
 
@@ -855,7 +852,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       ):(
         <>
           <div style={{background:"white",padding:"52px 20px 14px",borderBottom:`1px solid ${B.warmGray}`,position:"sticky",top:0,zIndex:10}}>
-            {/* Header row — equal width sides so logo is perfectly centered */}
             <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
               <div style={{flex:1,display:"flex",alignItems:"center"}}>
                 <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",flexDirection:"column",gap:5}}>
@@ -870,13 +866,20 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
               </div>
             </div>
 
-            {/* Kindness counter — centered below logo */}
+            {/* Kindness counter */}
             <div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
               <div style={{border:`2px solid #e91e8c`,borderRadius:12,padding:"5px 12px",background:"white",display:"inline-flex",alignItems:"center",gap:5}}>
                 <span style={{fontSize:13}}>🩷</span>
                 <span style={{fontSize:12,fontWeight:800,color:"#e91e8c",fontFamily:"'Nunito', sans-serif"}}>{kindnessCount.toLocaleString()}</span>
                 <span style={{fontSize:12,fontWeight:700,color:B.blue,fontFamily:"'Nunito', sans-serif"}}>acts of kindness & counting</span>
               </div>
+            </div>
+
+            {/* Sort toggle */}
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
+              <button onClick={()=>setSortNewest(s=>!s)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif",fontWeight:700,padding:"2px 0"}}>
+                {sortNewest?"Newest first ↓":"Oldest first ↑"} · tap to change
+              </button>
             </div>
 
             <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -922,7 +925,8 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
                         <Avatar initials={post.user_initials||"N"} size={36}/>
                         <div>
                           <div style={{fontWeight:700,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{post.user_name||"Neighbor"}</div>
-                          <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>📍 {post.city} · {new Date(post.created_at).toLocaleDateString()}</div>
+                          {/* CHANGE 2: Use timeAgo for friendly timestamps */}
+                          <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>📍 {post.city} · {timeAgo(post.created_at)}</div>
                         </div>
                       </div>
                       <span style={{background:post.type==="request"?B.blueLight:B.greenLight,color:post.type==="request"?B.blue:B.green,borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:800,fontFamily:"'Nunito', sans-serif"}}>
@@ -952,7 +956,6 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
         </>
       )}
 
-      {/* Report/Block Modal */}
       {showReport&&<ReportModal post={showReport} onClose={()=>setShowReport(null)} onReport={submitReport} onBlock={blockUser}/>}
 
       {confirmDelete&&(
