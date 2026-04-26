@@ -774,12 +774,19 @@ const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,onDeleteNo
     await supabase.from("notifications").update({read:true}).eq("user_id",session.user.id).eq("read",false);
     onMarkRead();
   };
+  const deleteAll=async()=>{
+    await supabase.from("notifications").delete().eq("user_id",session.user.id);
+    onMarkRead();
+  };
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:150,display:"flex",alignItems:"flex-end"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:"24px 24px 0 0",padding:"28px 24px 48px",width:"100%",maxHeight:"80vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <h3 style={{fontSize:20,fontWeight:900,color:B.text,fontFamily:"'Nunito', sans-serif",margin:0}}>Notifications 🔔</h3>
-          {unread>0&&<button onClick={markAllRead} style={{background:"none",border:"none",color:B.blue,fontWeight:700,fontSize:13,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>Mark all read</button>}
+          <div style={{display:"flex",gap:12}}>
+            {unread>0&&<button onClick={markAllRead} style={{background:"none",border:"none",color:B.blue,fontWeight:700,fontSize:13,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>Mark all read</button>}
+            {notifications.length>0&&<button onClick={deleteAll} style={{background:"none",border:"none",color:B.red,fontWeight:700,fontSize:13,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>Delete all</button>}
+          </div>
         </div>
         {notifications.length===0?(
           <div style={{textAlign:"center",padding:"40px 0",color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>
@@ -1113,7 +1120,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   return(
     <div style={{minHeight:"100vh",background:B.offWhite,paddingBottom:100}}>
       {showMenu&&<HamburgerMenu onClose={()=>setShowMenu(false)} onSignOut={()=>{setShowMenu(false);onSignOut();}}/> }
-      {showNotifications&&<NotificationsScreen notifications={notifications} onClose={()=>setShowNotifications(false)} onMarkRead={()=>{loadNotifications();setShowNotifications(false);}} onRepost={(n)=>{setShowNotifications(false);setShowPost(true);}} onDeleteNotification={deleteNotification} onMarkComplete={markCompleteFromNotification} session={session}/>}
+      {showNotifications&&<NotificationsScreen notifications={notifications} onClose={()=>setShowNotifications(false)} onMarkRead={()=>{loadNotifications();}} onRepost={(n)=>{setShowNotifications(false);setShowPost(true);}} onDeleteNotification={deleteNotification} onMarkComplete={markCompleteFromNotification} session={session}/>}
 
       {activeTab==="messages"?(
         <MessagesScreen session={session} onOpenThread={(t)=>setActiveThread({...t,my_id:session.user.id})} notifications={notifications} onOpenNotifications={()=>setShowNotifications(true)}/>
