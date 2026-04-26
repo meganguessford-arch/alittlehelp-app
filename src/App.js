@@ -213,11 +213,11 @@ const HamburgerMenu=({onClose,onSignOut})=>{
         </div>
         <div style={{marginBottom:20}}>
           <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Privacy Policy</div>
-          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>We collect only the information needed to run the app (email, name, zip code). We never sell your data. We never share your contact info without your consent. All data is stored securely.</p>
+          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>We collect only the information needed to run the app (email, name, zip code). We never sell your data. We never share your contact info without your consent. All data is stored securely. In cases where a user has been reported for violating our community guidelines, A Little Help?! staff may review relevant messages as part of a safety investigation. This is done solely to protect our community.</p>
         </div>
         <div>
           <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>Disclaimer</div>
-          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>A Little Help?! is not responsible for interactions between users. Nothing on this platform constitutes professional, medical, or legal advice. Governed by the laws of the State of Texas.</p>
+          <p style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.7}}>A Little Help?! is not responsible for interactions between users. Nothing on this platform constitutes professional, medical, or legal advice. Governed by the laws of the State of Texas. A Little Help?! reserves the right to remove any user or content that violates our community guidelines.</p>
         </div>
       </div>
     ),
