@@ -585,7 +585,8 @@ const MessagesScreen=({session,onOpenThread,notifications=[],onOpenNotifications
   const[loading,setLoading]=useState(true);
   const deleteThread=async(e,recipientId)=>{
     e.stopPropagation();
-    await supabase.from("messages").delete().or(`and(sender_id.eq.${session.user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${session.user.id})`);
+    await supabase.from("messages").delete().eq("sender_id",session.user.id).eq("recipient_id",recipientId);
+    await supabase.from("messages").delete().eq("sender_id",recipientId).eq("recipient_id",session.user.id);
     loadThreads();
   };
 
