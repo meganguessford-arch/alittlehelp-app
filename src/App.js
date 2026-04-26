@@ -6,6 +6,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DONORBOX_URL = "https://donorbox.org/launch-fund-for-a-little-help";
 const FORMSPREE_URL = "https://formspree.io/f/mwvaqlvk";
+const ADMIN_EMAIL = "megan@alittlehelpapp.org";
 
 const B = {
   blue: "#2B8FD4", blueDark: "#1A6FAD", blueLight: "#E8F4FD", blueMid: "#5AAEE0",
@@ -799,6 +800,140 @@ const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,session})=
   );
 };
 
+const AdminScreen=({session})=>{
+  const[activeAdmin,setActiveAdmin]=useState("reports");
+  const[reports,setReports]=useState([]);
+  const[users,setUsers]=useState([]);
+  const[allPosts,setAllPosts]=useState([]);
+  const[broadcastTitle,setBroadcastTitle]=useState("");
+  const[broadcastMsg,setBroadcastMsg]=useState("");
+  const[sending,setSending]=useState(false);
+  const[sent,setSent]=useState(false);
+
+  const loadReports=async()=>{
+    const{data}=await supabase.from("reports").select("*").order("created_at",{ascending:false});
+    if(data)setReports(data);
+  };
+
+  const loadAllPosts=async()=>{
+    const{data}=await supabase.from("posts").select("*").eq("fulfilled",false).order("created_at",{ascending:false});
+    if(data)setAllPosts(data);
+  };
+
+  const deleteAnyPost=async(postId)=>{
+    await supabase.from("posts").delete().eq("id",postId);
+    loadAllPosts();
+  };
+
+  const banUser=async(userId)=>{
+    await supabase.from("profiles").delete().eq("id",userId);
+    await supabase.auth.admin.deleteUser(userId);
+    loadReports();
+  };
+
+  const sendBroadcast=async()=>{
+    if(!broadcastTitle||!broadcastMsg)return;
+    setSending(true);
+    // Get all user ids
+    const{data:profiles}=await supabase.from("profiles").select("id");
+    if(profiles){
+      for(const profile of profiles){
+        await supabase.from("notifications").insert({
+          user_id:profile.id,
+          title:broadcastTitle,
+          message:broadcastMsg,
+          type:"broadcast",
+          read:false
+        });
+      }
+    }
+    await supabase.from("broadcasts").insert({title:broadcastTitle,message:broadcastMsg,sent_by:session.user.id});
+    setBroadcastTitle("");setBroadcastMsg("");setSending(false);setSent(true);
+    setTimeout(()=>setSent(false),3000);
+  };
+
+  useEffect(()=>{
+    if(activeAdmin==="reports")loadReports();
+    if(activeAdmin==="posts")loadAllPosts();
+  },[activeAdmin]);
+
+  const tabs=[{id:"reports",emoji:"🚩",label:"Reports"},{id:"posts",emoji:"🗑️",label:"Posts"},{id:"broadcast",emoji:"📢",label:"Broadcast"}];
+
+  return(
+    <div style={{minHeight:"100vh",background:B.offWhite,paddingBottom:100}}>
+      <div style={{background:`linear-gradient(135deg, ${B.blue}, ${B.blueDark})`,padding:"52px 20px 16px"}}>
+        <h2 style={{fontSize:22,fontWeight:900,color:"white",fontFamily:"'Nunito', sans-serif",margin:"0 0 16px"}}>Admin Panel 👑</h2>
+        <div style={{display:"flex",gap:8}}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>setActiveAdmin(t.id)} style={{padding:"6px 14px",borderRadius:99,border:"none",background:activeAdmin===t.id?"white":"rgba(255,255,255,0.2)",color:activeAdmin===t.id?B.blue:"white",fontWeight:800,fontSize:12,fontFamily:"'Nunito', sans-serif",cursor:"pointer"}}>
+              {t.emoji} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{padding:"20px"}}>
+        {activeAdmin==="reports"&&(
+          <div>
+            {reports.length===0?(
+              <div style={{textAlign:"center",padding:"40px 0",color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>
+                <div style={{fontSize:40,marginBottom:12}}>🚩</div>
+                <div style={{fontWeight:700}}>No reports yet</div>
+              </div>
+            ):reports.map(r=>(
+              <div key={r.id} style={{background:"white",borderRadius:16,padding:16,marginBottom:12,boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+                <div style={{fontWeight:800,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:4}}>🚩 {r.reason}</div>
+                <div style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:8}}>{r.details}</div>
+                <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:12}}>Reported user ID: {r.reported_user_id}<br/>Reporter: {r.reporter_id}<br/>{timeAgo(r.created_at)}</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>banUser(r.reported_user_id)} style={{flex:1,padding:"8px",borderRadius:10,background:B.red,border:"none",color:"white",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🚫 Ban User</button>
+                  <button onClick={()=>supabase.from("reports").delete().eq("id",r.id).then(loadReports)} style={{flex:1,padding:"8px",borderRadius:10,background:B.warmGray,border:"none",color:B.textMuted,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>✓ Dismiss</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeAdmin==="posts"&&(
+          <div>
+            {allPosts.length===0?(
+              <div style={{textAlign:"center",padding:"40px 0",color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>
+                <div style={{fontSize:40,marginBottom:12}}>🌱</div>
+                <div style={{fontWeight:700}}>No active posts</div>
+              </div>
+            ):allPosts.map(post=>(
+              <div key={post.id} style={{background:"white",borderRadius:16,padding:16,marginBottom:12,boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+                <div style={{fontWeight:800,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:4}}>{post.emoji} {post.title}</div>
+                <div style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:4}}>{post.description}</div>
+                <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:12}}>By: {post.user_name} · {post.city} · {timeAgo(post.created_at)}</div>
+                <button onClick={()=>deleteAnyPost(post.id)} style={{width:"100%",padding:"8px",borderRadius:10,background:B.redLight,border:`1px solid ${B.red}`,color:B.red,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🗑️ Delete Post</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeAdmin==="broadcast"&&(
+          <div>
+            <p style={{fontSize:14,color:B.textMuted,fontFamily:"'Nunito', sans-serif",marginBottom:20,lineHeight:1.6}}>Send a message to ALL users. It will appear in their notification bell as a message from A Little Help?! Team.</p>
+            {sent&&<div style={{background:B.greenLight,border:`1px solid ${B.green}`,borderRadius:12,padding:"10px 14px",marginBottom:16,fontSize:13,color:B.green,fontFamily:"'Nunito', sans-serif",fontWeight:700}}>✅ Broadcast sent to all users!</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div>
+                <label style={{fontSize:13,fontWeight:800,color:B.text,fontFamily:"'Nunito', sans-serif",display:"block",marginBottom:6}}>Title</label>
+                <input value={broadcastTitle} onChange={e=>setBroadcastTitle(e.target.value)} placeholder="e.g. Welcome to the beta! 🌱" style={{width:"100%",padding:"12px 16px",borderRadius:12,border:`2px solid ${B.warmGray}`,fontSize:15,fontFamily:"'Nunito', sans-serif",fontWeight:600,outline:"none",boxSizing:"border-box",color:B.text}}/>
+              </div>
+              <div>
+                <label style={{fontSize:13,fontWeight:800,color:B.text,fontFamily:"'Nunito', sans-serif",display:"block",marginBottom:6}}>Message</label>
+                <textarea value={broadcastMsg} onChange={e=>setBroadcastMsg(e.target.value)} placeholder="Your message to the community..." rows={4} style={{width:"100%",padding:"12px 16px",borderRadius:12,border:`2px solid ${B.warmGray}`,fontSize:15,fontFamily:"'Nunito', sans-serif",fontWeight:600,outline:"none",boxSizing:"border-box",color:B.text,resize:"none"}}/>
+              </div>
+              <Btn onClick={sendBroadcast} disabled={!broadcastTitle||!broadcastMsg||sending}>{sending?"Sending...":"📢 Send to all users"}</Btn>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,session,currentLocation,onChangeLocation})=>{
   const[posts,setPosts]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -943,6 +1078,8 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
 
       {activeTab==="messages"?(
         <MessagesScreen session={session} onOpenThread={(t)=>setActiveThread({...t,my_id:session.user.id})} notifications={notifications} onOpenNotifications={()=>setShowNotifications(true)}/>
+      ):activeTab==="admin"?(
+        <AdminScreen session={session}/>
       ):activeTab==="profile"?(
         <ProfileTab userProfile={userProfile} setUserProfile={setUserProfile} session={session} onChangeLocation={onChangeLocation}/>
       ):(
@@ -1086,7 +1223,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
       {showPost&&<CreatePostModal onClose={()=>setShowPost(false)} onPost={loadPosts} userProfile={userProfile} session={session} currentLocation={currentLocation}/>}
 
       <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:`1px solid ${B.warmGray}`,padding:"10px 0 24px",display:"flex",justifyContent:"space-around",zIndex:20}}>
-        {[{id:"feed",emoji:"🏠",label:"Feed"},{id:"messages",emoji:"💬",label:"Messages",badge:unreadCount+notifications.filter(n=>!n.read).length},{id:"profile",emoji:"👤",label:"Profile"}].map(item=>(
+        {[{id:"feed",emoji:"🏠",label:"Feed"},{id:"messages",emoji:"💬",label:"Messages",badge:unreadCount+notifications.filter(n=>!n.read).length},{id:"profile",emoji:"👤",label:"Profile"},...(session?.user?.email===ADMIN_EMAIL?[{id:"admin",emoji:"👑",label:"Admin"}]:[])].map(item=>(
           <div key={item.id} onClick={()=>setActiveTab(item.id)} style={{textAlign:"center",cursor:"pointer",position:"relative"}}>
             <div style={{fontSize:22}}>{item.emoji}</div>
             {item.badge>0&&<div style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:B.blue,color:"white",fontSize:10,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito', sans-serif"}}>{item.badge}</div>}
