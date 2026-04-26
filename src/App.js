@@ -768,12 +768,10 @@ const ReportModal=({post,onClose,onReport,onBlock})=>{
   );
 };
 
-const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,session})=>{
+const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,onDeleteNotification,onMarkComplete,session})=>{
   const unread=notifications.filter(n=>!n.read).length;
   const markAllRead=async()=>{
-    for(const n of notifications.filter(n=>!n.read)){
-      await supabase.from("notifications").update({read:true}).eq("id",n.id);
-    }
+    await supabase.from("notifications").update({read:true}).eq("user_id",session.user.id).eq("read",false);
     onMarkRead();
   };
   return(
@@ -802,7 +800,21 @@ const NotificationsScreen=({notifications,onClose,onRepost,onMarkRead,session})=
             </div>
             <div style={{fontWeight:700,fontSize:14,color:B.text,fontFamily:"'Nunito', sans-serif",marginBottom:4}}>{n.title}</div>
             <div style={{fontSize:13,color:B.textMuted,fontFamily:"'Nunito', sans-serif",lineHeight:1.5,marginBottom:n.type==="expired"?12:0}}>{n.message}</div>
-            {n.type==="expired"&&<button onClick={()=>onRepost(n)} style={{width:"100%",padding:"8px",borderRadius:10,background:B.blue,border:"none",color:"white",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>Post again 🌱</button>}
+            {n.type==="expiring"&&(
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <button onClick={()=>onMarkComplete(n)} style={{flex:1,padding:"8px",borderRadius:10,background:B.greenLight,border:`2px solid ${B.green}`,color:B.green,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>✅ Mark complete</button>
+                <button onClick={()=>onDeleteNotification(n.id)} style={{flex:1,padding:"8px",borderRadius:10,background:"none",border:`1px solid ${B.warmGray}`,color:B.textMuted,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🗑️ Delete</button>
+              </div>
+            )}
+            {n.type==="expired"&&(
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:8}}>
+                <button onClick={()=>onRepost(n)} style={{width:"100%",padding:"8px",borderRadius:10,background:B.blue,border:"none",color:"white",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>Post again 🌱</button>
+                <button onClick={()=>onDeleteNotification(n.id)} style={{width:"100%",padding:"6px",borderRadius:10,background:"none",border:`1px solid ${B.warmGray}`,color:B.textMuted,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>🗑️ Delete</button>
+              </div>
+            )}
+            {n.type==="broadcast"&&(
+              <button onClick={()=>onDeleteNotification(n.id)} style={{width:"100%",padding:"6px",borderRadius:10,background:"none",border:`1px solid ${B.warmGray}`,color:B.textMuted,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Nunito', sans-serif",marginTop:8}}>🗑️ Delete</button>
+            )}
           </div>
         ))}
       </div>
@@ -982,6 +994,23 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
     if(data)setKindnessCount(data.count);
   };
 
+  const markCompleteFromNotification=async(n)=>{
+    if(n.post_id){
+      await supabase.from("posts").update({fulfilled:true}).eq("id",n.post_id);
+      await supabase.from("kindness_count").update({count:kindnessCount+1}).eq("id",1);
+      setKindnessCount(k=>k+1);
+    }
+    await supabase.from("notifications").delete().eq("id",n.id);
+    loadNotifications();
+    loadPosts();
+    setShowNotifications(false);
+  };
+
+  const deleteNotification=async(notifId)=>{
+    await supabase.from("notifications").delete().eq("id",notifId);
+    loadNotifications();
+  };
+
   const loadNotifications=async()=>{
     if(!session?.user?.id)return;
     const{data}=await supabase.from("notifications").select("*").eq("user_id",session.user.id).order("created_at",{ascending:false});
@@ -1084,7 +1113,7 @@ const FeedScreen=({userProfile,setUserProfile,activeTab,setActiveTab,onSignOut,s
   return(
     <div style={{minHeight:"100vh",background:B.offWhite,paddingBottom:100}}>
       {showMenu&&<HamburgerMenu onClose={()=>setShowMenu(false)} onSignOut={()=>{setShowMenu(false);onSignOut();}}/> }
-      {showNotifications&&<NotificationsScreen notifications={notifications} onClose={()=>setShowNotifications(false)} onMarkRead={()=>{loadNotifications();setShowNotifications(false);}} onRepost={(n)=>{setShowNotifications(false);setShowPost(true);}} session={session}/>}
+      {showNotifications&&<NotificationsScreen notifications={notifications} onClose={()=>setShowNotifications(false)} onMarkRead={()=>{loadNotifications();setShowNotifications(false);}} onRepost={(n)=>{setShowNotifications(false);setShowPost(true);}} onDeleteNotification={deleteNotification} onMarkComplete={markCompleteFromNotification} session={session}/>}
 
       {activeTab==="messages"?(
         <MessagesScreen session={session} onOpenThread={(t)=>setActiveThread({...t,my_id:session.user.id})} notifications={notifications} onOpenNotifications={()=>setShowNotifications(true)}/>
