@@ -583,6 +583,12 @@ const MessageThreadScreen=({thread,onBack,session})=>{
 const MessagesScreen=({session,onOpenThread,notifications=[],onOpenNotifications})=>{
   const[threads,setThreads]=useState([]);
   const[loading,setLoading]=useState(true);
+  const deleteThread=async(e,recipientId)=>{
+    e.stopPropagation();
+    await supabase.from("messages").delete().or(`and(sender_id.eq.${session.user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${session.user.id})`);
+    loadThreads();
+  };
+
   const loadThreads=async()=>{
     if(!session?.user?.id)return;
     const{data}=await supabase.from("messages").select("*").or(`sender_id.eq.${session.user.id},recipient_id.eq.${session.user.id}`).order("created_at",{ascending:false});
@@ -619,16 +625,19 @@ const MessagesScreen=({session,onOpenThread,notifications=[],onOpenNotifications
             <div style={{fontSize:14,marginTop:8}}>When you connect with a neighbor, your conversation will appear here.</div>
           </div>
         ):threads.map(thread=>(
-          <div key={thread.id} onClick={()=>onOpenThread(thread)} style={{background:"white",borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px rgba(0,0,0,0.06)",cursor:"pointer"}}>
-            <Avatar initials={thread.initials} size={46}/>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{thread.name}</div>
-                <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>{thread.time}</div>
+          <div key={thread.id} style={{background:"white",borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+            <div onClick={()=>onOpenThread(thread)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer",minWidth:0}}>
+              <Avatar initials={thread.initials} size={46}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between"}}>
+                  <div style={{fontWeight:800,fontSize:15,color:B.text,fontFamily:"'Nunito', sans-serif"}}>{thread.name}</div>
+                  <div style={{fontSize:11,color:B.textMuted,fontFamily:"'Nunito', sans-serif"}}>{thread.time}</div>
+                </div>
+                <div style={{fontSize:13,color:thread.unread?B.text:B.textMuted,fontFamily:"'Nunito', sans-serif",fontWeight:thread.unread?700:600,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{thread.lastMessage}</div>
               </div>
-              <div style={{fontSize:13,color:thread.unread?B.text:B.textMuted,fontFamily:"'Nunito', sans-serif",fontWeight:thread.unread?700:600,marginTop:2}}>{thread.lastMessage}</div>
+              {thread.unread&&<div style={{width:10,height:10,borderRadius:"50%",background:B.blue,flexShrink:0}}/>}
             </div>
-            {thread.unread&&<div style={{width:10,height:10,borderRadius:"50%",background:B.blue,flexShrink:0}}/>}
+            <button onClick={(e)=>deleteThread(e,thread.recipient_id)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px",color:B.textMuted,fontSize:18,flexShrink:0}}>🗑️</button>
           </div>
         ))}
       </div>
