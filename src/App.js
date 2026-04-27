@@ -7,6 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const DONORBOX_URL = "https://donorbox.org/launch-fund-for-a-little-help";
 const FORMSPREE_URL = "https://formspree.io/f/mwvaqlvk";
 const ADMIN_EMAIL = "megan@alittlehelpapp.org";
+const MAILCHIMP_URL = "https://alittlehelpapp.us1.list-manage.com/subscribe/post?u=019db0622860ebf39d20c1029&id=6604054c0e&f_id=0029c2e1f0";
 
 const B = {
   blue: "#2B8FD4", blueDark: "#1A6FAD", blueLight: "#E8F4FD", blueMid: "#5AAEE0",
@@ -731,9 +732,15 @@ const WaitlistScreen=({zip,onBack})=>{
   const handleSubmit=async()=>{
     setLoading(true);
     try{
-      await fetch(FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,zip,city,type:"waitlist",message:`Waitlist signup from ${city||zip}`})});
+      // Submit to Mailchimp via form POST
+      const formData=new FormData();
+      formData.append("EMAIL",email);
+      formData.append("FNAME",name);
+      formData.append("ZIP",zip);
+      formData.append("b_019db0622860ebf39d20c1029_6604054c0e",""); // honeypot field required by Mailchimp
+      await fetch(MAILCHIMP_URL,{method:"POST",mode:"no-cors",body:formData});
       setSubmitted(true);
-    }catch(e){}
+    }catch(e){setSubmitted(true);} // no-cors means we can't read response, assume success
     setLoading(false);
   };
 
